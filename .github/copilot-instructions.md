@@ -102,3 +102,40 @@ public class BankingFeature
 ---
 
 By following this file, Copilot should generate **C# code** that enables **DI-driven, proxy-based BDD DSL syntax**, matching the test style shown above.
+
+---
+
+## Edit-scope rules for the assistant
+
+Short, enforceable rules for when the assistant may apply edits automatically vs when it must propose a plan and wait for approval.
+
+- Default: Do NOT apply code edits unless the user explicitly approves a proposed plan.
+- Automatic edits allowed without prior approval when ALL of the following are true:
+  - The user asked for `"Make minimal edits"` or an equivalent short phrasing.
+  - The total changes are <= 15 lines across all files.
+  - No new classes, records, interfaces, or projects are added outside the currently discussed scope.
+- Approval required (assistant must present a short plan and wait for user to reply `"Apply changes"`) when ANY of the following is true:
+  - The edit set exceeds 15 lines across all files.
+  - New classes/records/interfaces/types are added outside the defined scope for the current task.
+  - Files outside the explicitly mentioned files are modified.
+- Exceeding the 15-line automatic limit is allowed only when the user explicitly instructs the assistant to do so. Example phrases that grant permission:
+  - `"You may exceed 16 lines for this change."`
+  - `"Allow edits >15 lines for this task."`
+  - `"Apply changes (allow larger edits)"`
+  In such cases the assistant may proceed without requiring an additional confirmation.
+- When presenting a plan the assistant should include:
+  - A one-line summary of intent.
+  - The list of files to change with exact modification summaries (e.g., `add method X to file Y`, `change 3 lines in Z`).
+  - An estimated line-count of the edits.
+- When edits are applied the assistant should:
+  - Run a build and report the result (ask for permission if the user didn't initiate the change in the same session).
+  - If tests are run, clearly report failures only; keep output terse.
+
+### How users should phrase requests to control behavior
+
+- `Propose changes` — assistant must only return a short plan/diff summary and wait.
+- `Apply changes` — assistant may edit files, but must follow the 15-line rule unless the user also specifies `Allow edits >15 lines`.
+- `Make minimal edits` — assistant may auto-apply edits up to 15 lines.
+- `You may exceed 16 lines` — assistant may perform larger edits without extra confirmation.
+
+If you want stricter limits, change the `15` number to your preferred threshold.
