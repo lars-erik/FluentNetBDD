@@ -12,6 +12,8 @@ The system must allow Given/When/Then syntax to execute different test layers th
    - It owns the DI container and exposes `Given`, `When`, and `Then` properties.  
    - Each property is a **proxy instance** built with Castle.DynamicProxy.  
    - Proxy interceptors delegate calls to implementations resolved from DI.
+   - Must expose a constructor overload that accepts an `IServiceProvider` (or `IServiceCollection`) and builds the proxies at construction time so tests can use `new Dsl<IGivenX>(provider)` without reflection.
+   - The constructor should delegate proxy creation to the project's proxy factory (e.g., `DynamicPhaseProxyFactory` or `SubjunctionBuilder.Create<T>`).
 
 2. `Dsl.Register(IServiceCollection services)` should:  
    - Register step classes for each of the `Given`, `When`, and `Then` phases.  
@@ -25,12 +27,20 @@ The system must allow Given/When/Then syntax to execute different test layers th
 4. Tests must remain declarative and framework-independent.  
    - No test runner dependencies in the core library.  
    - Test frameworks (NUnit, xUnit, etc.) just call into the DSL.
+   - Tests should instantiate the DSL using the public API (e.g. `new Dsl<IGivenUserWithName>(provider)`) rather than use reflection to mutate private state.
+   - Example test usage to drive implementation:
+
+```
+var dsl = new Dsl<IGivenUserWithName>(provider);
+dsl.Given.User.WithName("Trinity");
+Assert.That(dsl.Given.User.Name, Is.EqualTo("Trinity"));
+```
 
 ---
 
 ## Style & Design Principles
 
-- Target **.NET 8**, **C# 12**.  
+- Target **.NET 9**, **C# 13** (or detect the repository TFM and prefer that).  
 - Prefer **interfaces** for step definitions.  
 - Keep step implementations **stateless or per-scope**.  
 - Use **records** for immutable data passed between steps.  

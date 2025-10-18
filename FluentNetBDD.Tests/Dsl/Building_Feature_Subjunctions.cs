@@ -2,6 +2,7 @@
 using Microsoft.Extensions.DependencyInjection;
 
 namespace FluentNetBDD.Tests.Dsl;
+using FluentNetBDD.Dsl;
 
 public class Building_Feature_Subjunctions
 {
@@ -27,15 +28,36 @@ public class Building_Feature_Subjunctions
         }
     }
 
-    [Test]
-    public void Constructs_Dynamic_Object_With_Interface_Delegation()
+    private IServiceProvider provider;
+
+    [SetUp]
+    public void SetUpServices()
     {
         var services = new ServiceCollection();
         services.AddTransient<IUserWithName, UserWithName>();
-        var provider = services.BuildServiceProvider();
+        provider = services.BuildServiceProvider();
+    }
+
+    [TearDown]
+    public void DisposeServices()
+    {
+        (provider as IDisposable)?.Dispose();
+    }
+
+    [Test]
+    public void Constructs_Dynamic_Object_With_Interface_Delegation()
+    {
         var dynamicGiven = SubjunctionBuilder.Create<IGivenUserWithName>(provider);
 
         dynamicGiven.User.WithName("Neo");
         Assert.That(dynamicGiven.User.Name, Is.EqualTo("Neo"));
+    }
+
+    [Test]
+    public void Constructs_Dsl_With_Specified_Given_Proxy()
+    {
+        var dsl = new Dsl<IGivenUserWithName>(provider);
+        dsl.Given.User.WithName("Trinity");
+        Assert.That(dsl.Given.User.Name, Is.EqualTo("Trinity"));
     }
 }
