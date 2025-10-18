@@ -2,18 +2,20 @@
 
 namespace FluentNetBDD.Dsl
 {
-    public class Dsl<TGiven>
+    public class Dsl<TGiven, TWhen, TThen>
         where TGiven : class
+        where TWhen : class
+        where TThen : class
     {
         public TGiven Given { get; private set; }
-        public object When { get; private set; }
-        public object Then { get; private set; }
+        public TWhen When { get; private set; }
+        public TThen Then { get; private set; }
 
         public Dsl(IServiceProvider provider)
         {
             Given = SubjunctionBuilder.Create<TGiven>(provider);
-            When = new object();
-            Then = new object();
+            When = SubjunctionBuilder.Create<TWhen>(provider);
+            Then = SubjunctionBuilder.Create<TThen>(provider);
         }
     }
 }

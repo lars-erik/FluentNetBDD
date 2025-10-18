@@ -1,18 +1,17 @@
-﻿using Microsoft.Extensions.DependencyInjection;
+﻿using FluentNetBDD.Dsl.Subjunctions;
+using Microsoft.Extensions.DependencyInjection;
 
 namespace FluentNetBDD.Tests.Dsl;
 using FluentNetBDD.Dsl;
 
 public class Subjunctions
 {
-    public interface IGiven {}
-
-    protected Dsl<IGiven> Dsl = null!;
+    protected Dsl<IGiven, IWhen, IThen> Dsl = null!;
 
     [SetUp]
     public void Setup()
     {
-        Dsl = new Dsl<IGiven>(new ServiceCollection().BuildServiceProvider());
+        Dsl = new Dsl<IGiven, IWhen, IThen>(new ServiceCollection().BuildServiceProvider());
     }
 
     [Test]

@@ -1,4 +1,5 @@
 ﻿using FluentNetBDD.Dsl.Builders;
+using FluentNetBDD.Dsl.Subjunctions;
 using Microsoft.Extensions.DependencyInjection;
 
 namespace FluentNetBDD.Tests.Dsl;
@@ -56,7 +57,7 @@ public class Building_Feature_Subjunctions
     [Test]
     public void Constructs_Dsl_With_Specified_Given_Proxy()
     {
-        var dsl = new Dsl<IGivenUserWithName>(provider);
+        var dsl = new Dsl<IGivenUserWithName, IWhen, IThen>(provider);
         dsl.Given.User.WithName("Trinity");
         Assert.That(dsl.Given.User.Name, Is.EqualTo("Trinity"));
     }
