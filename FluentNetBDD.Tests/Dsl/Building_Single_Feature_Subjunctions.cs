@@ -5,7 +5,7 @@ using Microsoft.Extensions.DependencyInjection;
 namespace FluentNetBDD.Tests.Dsl;
 using FluentNetBDD.Dsl;
 
-public class Building_Feature_Subjunctions
+public class Building_Single_Feature_Subjunctions
 {
     public class UserGreetingFeature
     {
