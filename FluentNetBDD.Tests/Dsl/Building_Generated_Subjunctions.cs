@@ -1,22 +1,21 @@
 ﻿using FluentNetBDD.Dsl;
-using FluentNetBDD.Dsl.Builders;
 using FluentNetBDD.Generation;
 using FluentNetBDD.Tests.Dsl.UserFeatures;
 using Microsoft.Extensions.DependencyInjection;
 
 [assembly:GenerateMarker("HelloWorlder")]
-[assembly:GenerateMarker("SillyWorlder", "Hello, silly dude")]
+[assembly:GenerateMarker("SillyWorlder", "Hello, silly")]
 
-[assembly:ConsumesDsl(
-    "AgileNamedUserDsl",
+namespace FluentNetBDD.Tests.Dsl;
+
+[ConsumesDsl(
+    "AgileNamedUser",
     [typeof(IUserWithName), typeof(IUserWithAgility)],
     [typeof(IUserGreetingAction), typeof(IUserAgilityActions)],
     [typeof(IUserGreetingVerification), typeof(IUserAgilityVerification)]
 )]
 
-namespace FluentNetBDD.Tests.Dsl;
-
-public class Building_Composed_Subjunctions
+public class Building_Generated_Subjunctions
 {
     private IServiceProvider mainProvider;
     private IServiceProvider provider;
@@ -32,9 +31,9 @@ public class Building_Composed_Subjunctions
         services.AddScoped<IUserGreetingAction, UserGreetingAction>();
         services.AddScoped<IUserGreetingVerification, UserGreetingVerification>();
 
-        services.AddScoped<IUserWithAgility, UserWithAgilityPocoDriver>();
-        services.AddScoped<IUserAgilityActions, UserWithAgilityActionsPocoDriver>();
-        services.AddScoped<IUserAgilityVerification, UserWithAgilityVerificationPocoDriver>();
+        services.AddScoped<IUserWithAgility, UserWithAgility>();
+        services.AddScoped<IUserAgilityActions, UserWithAgilityActions>();
+        services.AddScoped<IUserAgilityVerification, UserWithAgilityVerification>();
 
         services.AddScoped<DslState>();
 

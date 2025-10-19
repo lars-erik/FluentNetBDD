@@ -11,6 +11,27 @@ namespace FluentNetBDD.Generators
     [Generator]
     internal class DslGenerator : IIncrementalGenerator
     {
+        private record DslSet
+        {
+            public string FeatureName { get; }
+            public string Namespace { get; }
+            public Dictionary<int, TypeInfo[]> Types { get; }
+
+            public DslSet(string featureName, string ns, Dictionary<int, TypeInfo[]> types)
+            {
+                FeatureName = featureName?.Trim('"') ?? throw new ArgumentNullException(nameof(featureName));
+                Namespace = ns;
+                Types = types;
+            }
+
+            public void Deconstruct(out string FeatureName, out string Namespace, out Dictionary<int, TypeInfo[]> Types)
+            {
+                FeatureName = this.FeatureName;
+                Namespace = this.Namespace;
+                Types = this.Types;
+            }
+        }
+
         public void Initialize(IncrementalGeneratorInitializationContext context)
         {
 //#if DEBUG
@@ -27,6 +48,19 @@ namespace FluentNetBDD.Generators
                         var attr = (AttributeSyntax)ctx.Node;
                         var symbol = ctx.SemanticModel.GetSymbolInfo(attr).Symbol as IMethodSymbol;
 
+                        var curParent = attr.Parent;
+                        while (curParent is not null and not BaseNamespaceDeclarationSyntax)
+                        {
+                            curParent = curParent.Parent;
+                        }
+
+                        var ns = "";
+                        if (curParent is BaseNamespaceDeclarationSyntax nsDeclaration)
+                        {
+                            ns = nsDeclaration.Name.ToString();
+                        }
+
+                        // TODO: Can we get those by name?
                         var argumentList = 
                             attr.ArgumentList != null &&
                             attr.ArgumentList.Arguments.Any() &&
@@ -37,15 +71,14 @@ namespace FluentNetBDD.Generators
 
                         if (argumentList == null) return null;
 
-                        return argumentList
+                        var typeSet = argumentList
+                            .Skip(1)
                             .Select((x, i) => new {x, i})
                             .ToDictionary(
                                 (a) => a.i,
                                 (a) =>
                                 {
-                                    return a.i == 0
-                                        ? (object)a.x.ToString()
-                                        : ((CollectionExpressionSyntax)a.x.Expression)
+                                    return ((CollectionExpressionSyntax)a.x.Expression)
                                         .Elements
                                         .OfType<ExpressionElementSyntax>()
                                         .Select(y => y.Expression)
@@ -53,6 +86,10 @@ namespace FluentNetBDD.Generators
                                         .Select(y => ctx.SemanticModel.GetTypeInfo(y.Type))
                                         .ToArray();
                                 });
+
+                        var dslSet = new DslSet(argumentList[0].ToString(), ns, typeSet);
+
+                        return dslSet;
 
                         /*
                         LEFTOVER EXPERIMENTS FOR REFERENCE
@@ -97,16 +134,18 @@ namespace FluentNetBDD.Generators
 
             context.RegisterSourceOutput(classNames, (spc, markers) =>
             {
-                var generatedMarkers = new HashSet<string>();
+                var generatedDslSets = new HashSet<string>();
 
-                foreach (var dictionary in markers)
+                foreach (var dslSet in markers)
                 {
-                    var className = dictionary[0].ToString().Trim('"');
+                    var featureName = dslSet.FeatureName;
+
+                    if (!generatedDslSets.Add(featureName)) continue;
 
                     // CollectionExpressionSyntax > Elements > ExpressionElementSyntax > Expression > TypeOfExpressionSyntax > Type
-                    var givenTypes = ExtractTypes(dictionary[1]); 
-                    var whenTypes = ExtractTypes(dictionary[2]);
-                    var thenTypes = ExtractTypes(dictionary[3]);
+                    var givenTypes = ExtractTypes(dslSet.Types[0]); 
+                    var whenTypes = ExtractTypes(dslSet.Types[1]);
+                    var thenTypes = ExtractTypes(dslSet.Types[2]);
 
                     var namespaces = givenTypes.Union(whenTypes).Union(thenTypes)
                         .Select(x => x.Type!.ContainingNamespace.ToString())
@@ -126,15 +165,15 @@ namespace FluentNetBDD.Generators
                             actor => actor.Key,
                             actor => 
                             $$"""
-                              public interface I{{className}}Given{{actor.Key}} : {{String.Join(", ", actor.Value.Select(x => x.Type!.Name))}} {}
+                              public interface I{{featureName}}Given{{actor.Key}} : {{String.Join(", ", actor.Value.Select(x => x.Type!.Name))}} {}
                               """
                         );
 
                     var givenInterface =
                         $$"""
-                        public interface I{{className}}Given
+                        public interface I{{featureName}}Given
                         {
-                        {{String.Join(Environment.NewLine, givenActors.Keys.Select(actor => $"    I{className}Given{actor} {actor} {{ get; }}"))}}
+                        {{String.Join(Environment.NewLine, givenActors.Keys.Select(actor => $"    I{featureName}Given{actor} {actor} {{ get; }}"))}}
                         }
                         """;
 
@@ -151,15 +190,15 @@ namespace FluentNetBDD.Generators
                             actor => actor.Key,
                             actor => 
                             $$"""
-                              public interface I{{className}}When{{actor.Key}} : {{String.Join(", ", actor.Value.Select(x => x.Type!.Name))}} {}
+                              public interface I{{featureName}}When{{actor.Key}} : {{String.Join(", ", actor.Value.Select(x => x.Type!.Name))}} {}
                               """
                         );
 
                     var whenInterface =
                         $$"""
-                          public interface I{{className}}When
+                          public interface I{{featureName}}When
                           {
-                          {{String.Join(Environment.NewLine, whenActors.Keys.Select(actor => $"    I{className}When{actor} {actor} {{ get; }}"))}}
+                          {{String.Join(Environment.NewLine, whenActors.Keys.Select(actor => $"    I{featureName}When{actor} {actor} {{ get; }}"))}}
                           }
                           """;
 
@@ -176,27 +215,30 @@ namespace FluentNetBDD.Generators
                             actor => actor.Key,
                             actor => 
                             $$"""
-                              public interface I{{className}}Then{{actor.Key}} : {{String.Join(", ", actor.Value.Select(x => x.Type!.Name))}} {}
+                              public interface I{{featureName}}Then{{actor.Key}} : {{String.Join(", ", actor.Value.Select(x => x.Type!.Name))}} {}
                               """
                         );
 
                     var thenInterface =
                         $$"""
-                          public interface I{{className}}Then
+                          public interface I{{featureName}}Then
                           {
-                          {{String.Join(Environment.NewLine, thenActors.Keys.Select(actor => $"    I{className}Then{actor} {actor} {{ get; }}"))}}
+                          {{String.Join(Environment.NewLine, thenActors.Keys.Select(actor => $"    I{featureName}Then{actor} {actor} {{ get; }}"))}}
                           }
                           """;
 
                     var givenTypeList = String.Join(", ", givenTypes.Select(x => x.Type!.Name));
                     var whenTypeList = String.Join(", ", whenTypes.Select(x => x.Type!.Name));
                     var thenTypeList = String.Join(", ", thenTypes.Select(x => x.Type!.Name));
-                    
-                    spc.AddSource($"{className}.g.cs", 
+
+                    var dslClassName = featureName + "Dsl";
+                    spc.AddSource($"{dslClassName}.g.cs", 
                         $$"""
                         using System;
                         using FluentNetBDD.Dsl;
                         {{String.Join(Environment.NewLine, namespaces.Select(ns => $"using {ns};"))}}
+                        
+                        {{(dslSet.Namespace != "" ? $"namespace {dslSet.Namespace};" : "")}}
                         
                         // <auto-generated/>
                         {{String.Join(Environment.NewLine, givenMembers.Values)}}
@@ -208,9 +250,9 @@ namespace FluentNetBDD.Generators
                         {{String.Join(Environment.NewLine, thenMembers.Values)}}
                         {{thenInterface}}
                         
-                        public class {{className}} : Dsl<I{{className}}Given, I{{className}}When, I{{className}}Then>
+                        public partial class {{dslClassName}} : Dsl<I{{featureName}}Given, I{{featureName}}When, I{{featureName}}Then>
                         {
-                            public {{className}}(IServiceProvider provider) : base(provider)
+                            public {{dslClassName}}(IServiceProvider provider) : base(provider)
                             {
                             
                             }

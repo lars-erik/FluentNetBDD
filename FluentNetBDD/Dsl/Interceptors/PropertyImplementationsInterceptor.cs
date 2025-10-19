@@ -1,19 +1,30 @@
 ﻿using System.Reflection;
 using Castle.DynamicProxy;
-using Microsoft.Extensions.DependencyInjection;
+using FluentNetBDD.Dsl.Builders;
 
 namespace FluentNetBDD.Dsl.Interceptors;
 
-public class PropertyImplementationsInterceptor<T> : IInterceptor
+public class PropertyImplementationsInterceptor : IInterceptor
 {
     private readonly Dictionary<MethodInfo, object> getters = new();
 
-    public PropertyImplementationsInterceptor(IServiceProvider provider)
+    public PropertyImplementationsInterceptor(Type type, IServiceProvider provider)
     {
-        var props = typeof(T).GetProperties(BindingFlags.Instance | BindingFlags.Public);
-        foreach(var prop in props)
+        var props = type.GetProperties(BindingFlags.Instance | BindingFlags.Public);
+        foreach (var prop in props)
         {
-            var instance = provider.GetRequiredService(prop.PropertyType);
+            var instance = provider.GetService(prop.PropertyType);
+
+            if (instance == null && type.IsInterface)
+            {
+                instance = SubjunctionBuilder.Create(prop.PropertyType, provider);
+            }
+
+            if (instance == null)
+            {
+                throw new Exception($"Could not create interceptor for type {type}");
+            }
+
             if (prop.GetMethod != null)
             {
                 getters.Add(prop.GetMethod!, instance);
@@ -29,3 +40,6 @@ public class PropertyImplementationsInterceptor<T> : IInterceptor
         }
     }
 }
+
+public class PropertyImplementationsInterceptor<T>(IServiceProvider provider)
+    : PropertyImplementationsInterceptor(typeof(T), provider);

@@ -34,7 +34,7 @@ public interface IUserAgilityVerification
     void Jumped(int meters);
 }
 
-public class UserWithAgilityPocoDriver : IUserWithAgility
+public class UserWithAgility : IUserWithAgility
 {
     public int Agility { get; private set; }
 
@@ -44,7 +44,7 @@ public class UserWithAgilityPocoDriver : IUserWithAgility
     }
 }
 
-public class UserWithAgilityActionsPocoDriver : IUserAgilityActions
+public class UserWithAgilityActions : IUserAgilityActions
 {
     const double JumpMultiplier = 0.2;
 
@@ -52,7 +52,7 @@ public class UserWithAgilityActionsPocoDriver : IUserAgilityActions
 
     private int runUp = 0;
 
-    public UserWithAgilityActionsPocoDriver(DslState state)
+    public UserWithAgilityActions(DslState state)
     {
         this.state = state;
     }
@@ -69,11 +69,11 @@ public class UserWithAgilityActionsPocoDriver : IUserAgilityActions
     }
 }
 
-public class UserWithAgilityVerificationPocoDriver : IUserAgilityVerification
+public class UserWithAgilityVerification : IUserAgilityVerification
 {
     private readonly DslState state;
     
-    public UserWithAgilityVerificationPocoDriver(DslState state)
+    public UserWithAgilityVerification(DslState state)
     {
         this.state = state;
     }
