@@ -10,7 +10,7 @@ public class Building_Single_Feature_Subjunctions
     [Test]
     public void Constructs_Dynamic_Object_With_Interface_Delegation()
     {
-        var dynamicGiven = DslTermProxyBuilder.Create<IGivenUserWithName>(provider);
+        var dynamicGiven = DslTermProxyBuilder.Create<IGivenUserWithName>("Given", provider);
 
         dynamicGiven.User.WithName("Neo");
         Assert.That(dynamicGiven.User.Name, Is.EqualTo("Neo"));

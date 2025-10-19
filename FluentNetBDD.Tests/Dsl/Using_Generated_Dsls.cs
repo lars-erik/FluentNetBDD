@@ -1,4 +1,5 @@
-﻿using FluentNetBDD.Dsl;
+﻿using System.Diagnostics;
+using FluentNetBDD.Dsl;
 using FluentNetBDD.Generation;
 using FluentNetBDD.Tests.Dsl.UserFeatures;
 using Microsoft.Extensions.DependencyInjection;

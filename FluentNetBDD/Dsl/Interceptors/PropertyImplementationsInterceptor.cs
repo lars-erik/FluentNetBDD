@@ -7,10 +7,12 @@ namespace FluentNetBDD.Dsl.Interceptors;
 
 public class PropertyImplementationsInterceptor : IInterceptor
 {
+    private readonly string ownerName;
     private readonly Dictionary<MethodInfo, object> getters = new();
 
-    public PropertyImplementationsInterceptor(Type type, IServiceProvider provider)
+    public PropertyImplementationsInterceptor(Type type, string ownerName, IServiceProvider provider)
     {
+        this.ownerName = ownerName;
         var props = type.GetProperties(BindingFlags.Instance | BindingFlags.Public);
         foreach (var prop in props)
         {
@@ -18,7 +20,7 @@ public class PropertyImplementationsInterceptor : IInterceptor
 
             if (instance == null && type.IsInterface)
             {
-                instance = DslTermProxyBuilder.Create(prop.PropertyType, provider, InterceptorStrategy.DirectProperties | InterceptorStrategy.InheritedMethods);
+                instance = DslTermProxyBuilder.Create(prop.PropertyType, $"{ownerName} {prop.Name}", provider, InterceptorStrategy.DirectProperties | InterceptorStrategy.InheritedMethods);
             }
 
             if (instance == null)
@@ -50,5 +52,5 @@ public class PropertyImplementationsInterceptor : IInterceptor
     }
 }
 
-public class PropertyImplementationsInterceptor<T>(IServiceProvider provider)
-    : PropertyImplementationsInterceptor(typeof(T), provider);
+public class PropertyImplementationsInterceptor<T>(string ownerName, IServiceProvider provider)
+    : PropertyImplementationsInterceptor(typeof(T), ownerName, provider);

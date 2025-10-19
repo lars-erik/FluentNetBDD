@@ -13,9 +13,9 @@ public class Dsl<TGiven, TWhen, TThen>
 
     public Dsl(IServiceProvider provider)
     {
-        Given = DslTermProxyBuilder.Create<TGiven>(provider);
-        When = DslTermProxyBuilder.Create<TWhen>(provider);
-        Then = DslTermProxyBuilder.Create<TThen>(provider);
+        Given = DslTermProxyBuilder.Create<TGiven>(nameof(Given), provider);
+        When = DslTermProxyBuilder.Create<TWhen>(nameof(When), provider);
+        Then = DslTermProxyBuilder.Create<TThen>(nameof(Then), provider);
     }
 
     public void Deconstruct(out TGiven Given, out TWhen When, out TThen Then)
