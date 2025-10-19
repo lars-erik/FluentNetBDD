@@ -1,134 +1,210 @@
-# DotNet.BDD
+# FluentNetBDD
 
-A **fluent, extensible BDD DSL for .NET**  
-Inspired by JGiven, Cucumber, and Dave Farley’s four-layer test model.
+**FluentNetBDD** is a type-safe and extensible DSL library for .NET to support ATDD-style (Acceptance-Test Driven Development) and BDD-style (Behavior-Driven Development).  
+Building a nice DSL for your tests is not very hard, but to get the best developer experience it may require a lot of plumbing or tight coupling. This project aims to allow composable drivers without the need to write any DSL-specific boilerplate.  
+FluentNetBDD combines **Roslyn source generation** and **runtime composition** to provide fluent DSLs that is specialized for each feature — without duplication, losing compile-time safety or IntelliSense. And best of all, you get to work on drivers rather than DSL plumbing.  
+The library assumes drivers are resolvable via a `Microsoft.Extensions.DependencyInjection.Abstractions.IServiceProvider`, but there are no other forced dependencies.
 
 ---
 
 ## ✨ Goals
 
-- Enable **fluent, readable Given/When/Then DSLs** that can be extended per feature or domain.  
-- Support **dependency injection** for step classes, allowing composition across test layers.  
-- Use **Castle.DynamicProxy** (or a similar mechanism) to dynamically attach step interfaces and delegate to registered implementations.
-- Allow the **same DSL syntax** to drive different test depths (unit, integration, end-to-end) through configuration.  
-- Integrate cleanly with standard test frameworks such as **NUnit**, **xUnit**, or **MSTest**.  
-- Support **async/await** where needed, but maintain **natural synchronous readability**.
+FluentNetBDD was built to make feature-focused, fluent test DSLs both **easy to extend** and **safe to use**.
+
+- ✅ **Fluent DSL syntax** – natural, Gherkin-style test statements  
+  ```csharp
+  Given.User.HasAccount();
+  When.User.Deposits(100);
+  Then.Account.HasBalance(100);
+  ```
+- ✅ **Static typing & IntelliSense** – every subjunction (`Given`, `When`, `Then`) exposes only the actions relevant to that feature.
+- ✅ **Composable actors** – features can mix multiple actor capabilities without resolving to reflection or casting.
+- ✅ **Roslyn-powered generation** – compile-time code generation produces feature-specific DSL entrypoints automatically.
+- ✅ **Runtime composition** – Castle DynamicProxy builds the actual working objects and delegates to registered actor implementations.
 
 ---
 
-## 🧠 Example Usage
+## 🧱 Architecture Overview
 
-```
-private Dsl<GivenForFeature, WhenForFeature, ThenForFeature> Dsl;
+### 1. DSL Runtime (`FluentNetBDD`)
 
-[SetUp]
-public void SetUp()
+At runtime, the DSL is built from three main parts:
+
+| Component | Responsibility |
+|------------|----------------|
+| `Dsl<TGiven, TWhen, TThen>` | Entry point that wires up the Given/When/Then subjunctions. |
+| `DslTermProxyBuilder` | Dynamically composes actor interfaces and builds proxy instances for each subjunction. |
+| `Interceptors` | Handle property/method delegation across multiple actor interfaces. |
+
+### 2. Source Generation (`FluentNetBDD.Generators`)
+
+Roslyn source generators scan the project for feature-specific actor interfaces and emit a ready-to-use DSL class.  
+Example output:
+
+```csharp
+// Generated: BankCustomerDsl.g.cs
+
+// The same actor may compose several interfaces
+public interface IBankCustomerUserGiven : IBankCustomerGivenUser, INamedUser { ... }
+public interface IBankCustomerBankGiven : IGivenBank { ... }
+public interface IBankCustomerGiven 
 {
-    var services = new ServiceCollection();
-    Dsl.Register(services);
-    provider = services.BuildServiceProvider();
+    IBankCustomerBankGiven Bank { get; }
+    IBankCustomerUserGiven User { get; }
 }
 
-[Test]
-public void Adding_Money()
+// [more actors omitted...]
+public interface IBankCustomerWhen { ... }
+
+// [more actors omitted...]
+public interface IBankCustomerThen { ... }
+
+public class BankCustomerDsl
+    : Dsl<IBankCustomerGiven, IBankCustomerWhen, IBankCustomerThen>
 {
-    Given.User.HasAccount();
-    When.User.Deposits(100);
-    Then.User.HasBalance(100);
+    public BankCustomerDsl(IServiceProvider provider) : base(provider) { }
 }
 ```
 
-- `Given`, `When`, and `Then` are **proxy-backed objects** implementing domain-specific step interfaces.
-- Step interfaces such as `IGivenUser` and `IWhenUser` can be added dynamically via **Castle.DynamicProxy**.
-- Actual implementations are resolved from the **service provider** registered via `Dsl.Register(IServiceCollection)`.
+This allows full IntelliSense and compile-time correctness for each feature without any manual boilerplate.
 
----
+### 3. Feature Composition
 
-## 🧩 Architecture Overview
+Actor interfaces define domain behavior and should be implemented as registered drivers:
 
-| Layer | Purpose |
-|-------|----------|
-| **Test DSL Layer** | The fluent façade used in tests (Given/When/Then). |
-| **Step Interfaces** | Define readable, domain-level operations (e.g., `IGivenUser`, `IWhenAccount`). |
-| **Step Implementations** | Concrete logic, injected via DI; can target API, UI, or domain depending on test depth. |
-| **Dynamic Proxy Layer** | Uses `Castle.DynamicProxy` to attach the correct interfaces to the `Given/When/Then` contexts and forward method calls to the registered implementations. |
-| **Execution Layer** | Coordinates DI scopes, lifetimes, and asynchronous execution. |
+```csharp
+[Actor("Bank")]
+public interface IGivenBank
+{
+    void IsOpen();
+}
 
----
+[Actor("User")]
+public interface INamedUser
+{
+    void WithName(string name);
+}
 
-## 🧩 Example Step Definitions
-
-```
-public interface IGivenUser
+[Actor("User")]
+public interface IBankCustomerGivenUser
 {
     void HasAccount();
 }
 
-public interface IWhenUser
+[Actor("User")]
+public interface IBankCustomerWhenUser
 {
-    void Deposits(decimal amount);
+    void Deposits(int amount);
 }
 
-public interface IThenUser
+[Actor("Account")]
+public interface IThenBankAccount
 {
-    void HasBalance(decimal expected);
+    void HasBalance(int expected);
 }
+```
 
-public class GivenUserSteps : IGivenUser
+The Roslyn generator automatically creates a DSL class combining them.  
+Implementations are resolved through dependency injection, so each actor can maintain its own state.
+
+---
+
+## 🧩 Example Test
+
+```csharp
+[GenerateDsl(
+    "BankCustomer"
+    givenTypes: [typeof(IGivenBank), typeof(IBankCustomerGivenUser)],
+    whenTypes: [typeof(IBankCustomerWhenUser)],
+    thenTypes: [typeof(IThenBankAccount)]
+)]
+
+public class Bank_Customer_Transactions
 {
-    private readonly BankContext context;
+    [Test]
+    public void Adding_Money_Increases_Balance()
+    {
+        Given.User.HasAccount();
+        Given.Bank.IsOpen();
 
-    public GivenUserSteps(BankContext context) => this.context = context;
+        When.User.Deposits(100);
 
-    public void HasAccount() => context.Accounts.Add(new Account("TestUser"));
-}
+        Then.Account.HasBalance(100);
+    }
 
-public class WhenUserSteps : IWhenUser
-{
-    private readonly BankContext context;
+    protected IBankCustomerGiven Given;
+    protected IBankCustomerWhen When;
+    protected IThenBankAccount Then;
 
-    public WhenUserSteps(BankContext context) => this.context = context;
+    [SetUp]
+    public void SetUp()
+    {
+        var services = new ServiceCollection();
 
-    public void Deposits(decimal amount) => context.Deposit("TestUser", amount);
-}
+        // Implement and register drivers for the composed types
+        services.AddTransient<IGivenBank, GivenBankIntegrated>();
+        services.AddTransient<IThenBankAccount, ThenBankAccount>();
 
-public class ThenUserSteps : IThenUser
-{
-    private readonly BankContext context;
+        services.AddTransient<IBankCustomerGivenUser, BankCustomerGivenUser>();
+        services.AddTransient<IBankCustomerWhenUser, BankCustomerWhenUser>();
+    
+        var provider = services.BuildServiceProvider();
 
-    public ThenUserSteps(BankContext context) => this.context = context;
-
-    public void HasBalance(decimal expected)
-        => context.GetBalance("TestUser").Should().Be(expected);
+        (Given, When, Then) = new BankCustomerDsl(provider);
+    }
 }
 ```
 
 ---
 
-## ⚙️ Planned Features
+## 🔮 Future Work
 
-- [ ] Core `Dsl<TGiven, TWhen, TThen>` class  
-- [ ] Automatic registration of step interfaces via DI  
-- [ ] `Castle.DynamicProxy` integration to attach interfaces to `Given`, `When`, `Then`  
-- [ ] Support for async step methods  
-- [ ] Extensible configuration for different test layers (unit/integration/UI)  
-- [ ] Optional `Scenario` result reporting  
+- **Named actors** for multi-subject tests:  
+  ```csharp
+  dsl.Given.User.Named("Neo");
+  dsl.Then.User.Named("Neo").JumpedLongerThan("Trinity");
+  ```
+- Library classes to aid in builder-pattern setup before execution of several steps:
+  ```csharp
+  Given.User
+      .WithAccount(balance: 100)
+      .And
+      .IsLoggedIn();
+
+  await When.User
+      .Transfers(50)
+      .To("Alice");
+
+  // Then...
+  ```
+- Enhanced **exception handling and interception** for nested or async operations.  
+- DSL documentation and automatic report generation.
+- Advanced Roslyn features for **cross-feature composition**.
 
 ---
 
-## 🧰 Tech Stack
+## 🧠 Philosophy
 
-- .NET 8 / C# 12  
-- NUnit (initial integration)  
-- Castle.DynamicProxy  
-- Microsoft.Extensions.DependencyInjection  
-- FluentAssertions  
+FluentNetBDD aims to make BDD **developer-friendly, discoverable, and statically verifiable** —  
+no string-based reflection, no runtime glue, just clean C# with first-class tooling support.
 
 ---
 
-## 📚 References
+## 📚 Inspiration
 
 - [JGiven](https://jgiven.org/)  
 - [Ian Cooper – TDD, Where did it all go wrong?](https://www.youtube.com/watch?v=EZ05e7EMOLM)  
 - [Acceptance Test Driven Development](https://dojoconsortium.org/assets/ATDD%20-%20How%20to%20Guide.pdf)
 - [Cucumber School – Test Layering Concepts](https://school.cucumber.io/)
+
+---
+
+## 📂 Project Layout
+
+```
+FluentNetBDD/              # Core DSL runtime
+FluentNetBDD.Generation/   # Roslyn support types
+FluentNetBDD.Generators/   # Source generators (DslGenerator)
+FluentNetBDD.Tests/        # Example & integration tests
+```
+
