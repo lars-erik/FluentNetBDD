@@ -1,4 +1,5 @@
-﻿using System.Reflection;
+﻿using System.Diagnostics;
+using System.Reflection;
 using Castle.DynamicProxy;
 using FluentNetBDD.Dsl.Builders;
 
@@ -17,17 +18,21 @@ public class PropertyImplementationsInterceptor : IInterceptor
 
             if (instance == null && type.IsInterface)
             {
-                instance = SubjunctionBuilder.Create(prop.PropertyType, provider);
+                instance = DslTermProxyBuilder.Create(prop.PropertyType, provider, InterceptorStrategy.DirectProperties | InterceptorStrategy.InheritedMethods);
             }
 
             if (instance == null)
             {
-                throw new Exception($"Could not create interceptor for type {type}");
+                throw new Exception($"Could not create interceptor for type {prop.PropertyType.Name} in {type.Name}.{prop.Name}");
             }
 
             if (prop.GetMethod != null)
             {
                 getters.Add(prop.GetMethod!, instance);
+            }
+            else
+            {
+                throw new Exception($"Can't set up DSL property {type.Name}.{prop.Name} since it does not have a setter.");
             }
         }
     }
@@ -37,6 +42,10 @@ public class PropertyImplementationsInterceptor : IInterceptor
         if (getters.TryGetValue(invocation.Method, out var instance))
         {
             invocation.ReturnValue = instance;
+        }
+        else
+        {
+            invocation.Proceed();
         }
     }
 }

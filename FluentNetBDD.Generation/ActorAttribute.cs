@@ -1,9 +1,11 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Text;
 
 namespace FluentNetBDD.Generation
 {
+    /// <summary>
+    /// Specifies which generated member of a conjunction the interface extends.
+    /// </summary>
+    [AttributeUsage(AttributeTargets.Interface)]
     public class ActorAttribute : Attribute
     {
         public ActorAttribute(string actorName)

@@ -1,5 +1,4 @@
 ﻿using FluentNetBDD.Dsl.Builders;
-using FluentNetBDD.Dsl.Subjunctions;
 using FluentNetBDD.Tests.Dsl.UserFeatures;
 using Microsoft.Extensions.DependencyInjection;
 
@@ -8,6 +7,34 @@ using FluentNetBDD.Dsl;
 
 public class Building_Single_Feature_Subjunctions
 {
+    [Test]
+    public void Constructs_Dynamic_Object_With_Interface_Delegation()
+    {
+        var dynamicGiven = DslTermProxyBuilder.Create<IGivenUserWithName>(provider);
+
+        dynamicGiven.User.WithName("Neo");
+        Assert.That(dynamicGiven.User.Name, Is.EqualTo("Neo"));
+    }
+
+    [DslTestCase<IGivenUserWithName, IWhen, IThen>]
+    public void Constructs_Dsl_With_Specified_Given_Proxy(params Type[] args)
+    {
+        var dsl = (Dsl<IGivenUserWithName, IWhen, IThen>)untypedDsl;
+
+        dsl.Given.User.WithName("Trinity");
+        Assert.That(dsl.Given.User.Name, Is.EqualTo("Trinity"));
+    }
+
+    [DslTestCase<IGivenUserWithName, IWhenUserGreeting, IThenUserGreeting>]
+    public void Constructs_Dsl_With_Proxies_For_All_Subjunctions(params Type[] args)
+    {
+        var dsl = (Dsl<IGivenUserWithName, IWhenUserGreeting, IThenUserGreeting>)untypedDsl;
+
+        dsl.Given.User.WithName("Morpheus");
+        dsl.When.User.IsGreeted();
+        dsl.Then.User.Hears("Hi, Morpheus!");
+    }
+
     private IServiceProvider mainProvider;
     private IServiceProvider provider;
     private object untypedDsl;
@@ -48,34 +75,6 @@ public class Building_Single_Feature_Subjunctions
         (mainProvider as IDisposable)?.Dispose();
     }
 
-    [Test]
-    public void Constructs_Dynamic_Object_With_Interface_Delegation()
-    {
-        var dynamicGiven = SubjunctionBuilder.Create<IGivenUserWithName>(provider);
-
-        dynamicGiven.User.WithName("Neo");
-        Assert.That(dynamicGiven.User.Name, Is.EqualTo("Neo"));
-    }
-
-    [DslTestCase<IGivenUserWithName, IWhen, IThen>]
-    public void Constructs_Dsl_With_Specified_Given_Proxy(params Type[] args)
-    {
-        var dsl = (Dsl<IGivenUserWithName, IWhen, IThen>)untypedDsl;
-
-        dsl.Given.User.WithName("Trinity");
-        Assert.That(dsl.Given.User.Name, Is.EqualTo("Trinity"));
-    }
-
-    [DslTestCase<IGivenUserWithName, IWhenUserGreeting, IThenUserGreeting>]
-    public void Constructs_Dsl_With_Proxies_For_All_Subjunctions(params Type[] args)
-    {
-        var dsl = (Dsl<IGivenUserWithName, IWhenUserGreeting, IThenUserGreeting>)untypedDsl;
-
-        dsl.Given.User.WithName("Morpheus");
-        dsl.When.User.IsGreeted();
-        dsl.Then.User.Hears("Hi, Morpheus!");
-    }
-
     private static object CreateDsl(IServiceProvider provider)
     {
         var types = TestContext.CurrentContext.Test.Arguments.OfType<Type[]>().SelectMany(x => x).ToArray();
@@ -97,7 +96,20 @@ public class Building_Single_Feature_Subjunctions
 
         throw new Exception("Use params Type[] args with only three types per test to build our Dsl");
     }
+
+    public interface IGiven
+    {
+    }
+
+    public interface IWhen
+    {
+    }
+
+    public interface IThen
+    {
+    }
+    public class DslTestCaseAttribute<TGiven, TWhen, TThen>()
+        : TestCaseAttribute(typeof(TGiven), typeof(TWhen), typeof(TThen));
+
 }
 
-public class DslTestCaseAttribute<TGiven, TWhen, TThen>()
-    : TestCaseAttribute(typeof(TGiven), typeof(TWhen), typeof(TThen));

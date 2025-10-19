@@ -3,7 +3,7 @@ using FluentNetBDD.Generation;
 
 namespace FluentNetBDD.Tests.Dsl.UserFeatures;
 
-public class UserGreetingFeature
+public class NamedUserFeature
 {
     public const string UserName = nameof(UserName);
     public const string UserGreeting = nameof(UserGreeting);
@@ -30,16 +30,28 @@ public interface IUserGreetingVerification
     void Hears(string greeting);
 }
 
+/// <summary>
+/// This is here for the manual example in <see cref="Building_Single_Feature_Subjunctions"/>.
+/// It should rather be generated via the <see cref="GenerateDslAttribute"/> attribute.
+/// </summary>
 public interface IGivenUserWithName
 {
     IUserWithName User { get; }
 }
 
+/// <summary>
+/// This is here for the manual example in <see cref="Building_Single_Feature_Subjunctions"/>.
+/// It should rather be generated via the <see cref="GenerateDslAttribute"/> attribute.
+/// </summary>
 public interface IWhenUserGreeting
 {
     IUserGreetingAction User { get; }
 }
 
+/// <summary>
+/// This is here for the manual example in <see cref="Building_Single_Feature_Subjunctions"/>.
+/// It should rather be generated via the <see cref="GenerateDslAttribute"/> attribute.
+/// </summary>
 public interface IThenUserGreeting
 {
     IUserGreetingVerification User { get; }
@@ -52,7 +64,7 @@ class UserWithName : IUserWithName
     public void WithName(string name)
     {
         Name = name;
-        state.Set(UserGreetingFeature.UserName, name);
+        state.Set(NamedUserFeature.UserName, name);
     }
 
     public UserWithName(DslState state)
@@ -72,8 +84,8 @@ class UserGreetingAction : IUserGreetingAction
 
     public void IsGreeted()
     {
-        var userName = state.Get(UserGreetingFeature.UserName);
-        state.Set(UserGreetingFeature.UserGreeting, $"Hi, {userName}!");
+        var userName = state.Get(NamedUserFeature.UserName);
+        state.Set(NamedUserFeature.UserGreeting, $"Hi, {userName}!");
     }
 }
 
@@ -86,7 +98,7 @@ class UserGreetingVerification : IUserGreetingVerification
     }
     public void Hears(string greeting)
     {
-        var actualGreeting = state.Get(UserGreetingFeature.UserGreeting);
-        Assert.That(actualGreeting, Is.EqualTo(state.Get(UserGreetingFeature.UserGreeting)));
+        var actualGreeting = state.Get(NamedUserFeature.UserGreeting);
+        Assert.That(actualGreeting, Is.EqualTo(state.Get(NamedUserFeature.UserGreeting)));
     }
 }

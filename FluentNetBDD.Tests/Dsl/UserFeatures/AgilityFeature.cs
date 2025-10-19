@@ -1,10 +1,5 @@
 ﻿using FluentNetBDD.Dsl;
 using FluentNetBDD.Generation;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace FluentNetBDD.Tests.Dsl.UserFeatures;
 
@@ -25,32 +20,39 @@ public interface IUserWithAgility
 public interface IUserAgilityActions
 {
     void Jumps();
-    void Runs(int meters);
+    void Runs(uint meters);
 }
 
 [Actor("User")]
 public interface IUserAgilityVerification
 {
-    void Jumped(int meters);
+    void Jumped(uint meters);
 }
 
 public class UserWithAgility : IUserWithAgility
 {
+    private readonly DslState state;
     public int Agility { get; private set; }
+
+    public UserWithAgility(DslState state)
+    {
+        this.state = state;
+    }
 
     public void WithAgility(int agility)
     {
         Agility = agility;
+        state.Set(AgilityFeature.UserAgility, agility);
     }
 }
 
 public class UserWithAgilityActions : IUserAgilityActions
 {
-    const double JumpMultiplier = 0.2;
+    const double JumpMultiplier = 0.3;
 
     private readonly DslState state;
 
-    private int runUp = 0;
+    private uint runUp = 0;
 
     public UserWithAgilityActions(DslState state)
     {
@@ -60,10 +62,11 @@ public class UserWithAgilityActions : IUserAgilityActions
     public void Jumps()
     {
         var agility = (int?)state.Get(AgilityFeature.UserAgility) ?? 1;
-        state.Set(AgilityFeature.UserJumpedMeters, (int)Math.Ceiling(agility * runUp * JumpMultiplier));
+        var jumpedMeters = (int)Math.Ceiling(agility * Math.Max(1, runUp) * JumpMultiplier);
+        state.Set(AgilityFeature.UserJumpedMeters, jumpedMeters);
     }
     
-    public void Runs(int meters)
+    public void Runs(uint meters)
     {
         runUp = meters;
     }
@@ -78,9 +81,9 @@ public class UserWithAgilityVerification : IUserAgilityVerification
         this.state = state;
     }
 
-    public void Jumped(int meters)
+    public void Jumped(uint meters)
     {
-        var jumped = (int?)state.Get(AgilityFeature.UserJumpedMeters);
+        var jumped = state.Get(AgilityFeature.UserJumpedMeters);
         Assert.That(jumped, Is.EqualTo(meters));
     }
 }
