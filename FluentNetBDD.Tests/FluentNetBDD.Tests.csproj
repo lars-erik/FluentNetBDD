@@ -6,6 +6,11 @@
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
     <IsPackable>false</IsPackable>
+
+    <DisableIncrementalBuild>true</DisableIncrementalBuild>
+    <EmitCompilerGeneratedFiles>true</EmitCompilerGeneratedFiles>
+    <CompilerGeneratedFilesOutputPath>$(BaseIntermediateOutputPath)\Generated</CompilerGeneratedFilesOutputPath>
+
   </PropertyGroup>
 
   <ItemGroup>
@@ -25,7 +30,9 @@
   </ItemGroup>
 
   <ItemGroup>
+    <ProjectReference Include="..\FluentNetBDD.Generation\FluentNetBDD.Generation.csproj" />
     <ProjectReference Include="..\FluentNetBDD\FluentNetBDD.csproj" />
+    <ProjectReference Include="..\FluentNetBDD.Generators\FluentNetBDD.Generators.csproj" OutputItemType="Analyzer" ReferenceOutputAssembly="false" />
   </ItemGroup>
 
   <ItemGroup>
