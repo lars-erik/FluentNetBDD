@@ -1,141 +1,141 @@
-# Copilot Project Instructions — DotNet.BDD
+# Copilot Instructions for FluentNetBDD
 
-## Purpose
-We are building a **BDD-style fluent DSL** for .NET with dynamically composable step interfaces.  
-The system must allow Given/When/Then syntax to execute different test layers through DI and dynamic proxy composition.
-
----
-
-## Key Architecture Rules
-
-1. `Dsl<TGiven, TWhen, TThen>` is the root generic entry point for tests.  
-   - It owns the DI container and exposes `Given`, `When`, and `Then` properties.  
-   - Each property is a **proxy instance** built with Castle.DynamicProxy.  
-   - Proxy interceptors delegate calls to implementations resolved from DI.
-   - Must expose a constructor overload that accepts an `IServiceProvider` (or `IServiceCollection`) and builds the proxies at construction time so tests can use `new Dsl<IGivenX>(provider)` without reflection.
-   - The constructor should delegate proxy creation to the project's proxy factory (e.g., `DynamicPhaseProxyFactory` or `SubjunctionBuilder.Create<T>`).
-
-2. `Dsl.Register(IServiceCollection services)` should:  
-   - Register step classes for each of the `Given`, `When`, and `Then` phases.  
-   - Allow additional step interfaces to be discovered or registered manually.
-
-3. The **proxy interceptor** must:  
-   - Resolve the correct implementation from the DI container.  
-   - Forward the method call (sync or async) to the resolved instance.  
-   - Support multiple interfaces per phase (e.g., `IGivenUser`, `IGivenAccount`).
-
-4. Tests must remain declarative and framework-independent.  
-   - No test runner dependencies in the core library.  
-   - Test frameworks (NUnit, xUnit, etc.) just call into the DSL.
-   - Tests should instantiate the DSL using the public API (e.g. `new Dsl<IGivenUserWithName>(provider)`) rather than use reflection to mutate private state.
-   - Example test usage to drive implementation:
-
-```
-var dsl = new Dsl<IGivenUserWithName>(provider);
-dsl.Given.User.WithName("Trinity");
-Assert.That(dsl.Given.User.Name, Is.EqualTo("Trinity"));
-```
+FluentNetBDD is a **type-safe, extensible BDD (Behavior-Driven Development) DSL framework** for .NET.  
+It combines **Roslyn source generation** and **runtime composition using Castle.DynamicProxy** to provide fluent, per-feature test DSLs with full IntelliSense and compile-time safety.
 
 ---
 
-## Style & Design Principles
+## 🎯 Purpose
 
-- Target **.NET 9**, **C# 13** (or detect the repository TFM and prefer that).  
-- Prefer **interfaces** for step definitions.  
-- Keep step implementations **stateless or per-scope**.  
-- Use **records** for immutable data passed between steps.  
-- Implement **async-aware interceptors** to support `Task` return types.  
-- Avoid reflection-heavy scanning — rely on DI registration.  
-- Code should feel like a **typed internal DSL**, not like SpecFlow/Gherkin parsing.
+Copilot should help users extend or consume FluentNetBDD by suggesting **idiomatic driver code**, **actor interfaces**, and **test DSL usage**, *not* generic BDD examples or Gherkin text.
+
+Generated suggestions should:
+- Prefer **C# 12+** syntax and `.NET 9` conventions.
+- Stay **framework-agnostic** (no hard dependency on xUnit, NUnit, or SpecFlow).
+- Encourage **strong typing** and **dependency-injection-driven design**.
+- Avoid code that introduces reflection, runtime casting, or string-based step definitions.
 
 ---
 
-## Project structure
+## 🧠 Core Concepts
 
-- Unit tests for the DSL core functionality in FluentNetBDD.Tests\DSL
-- Implementation of all library code in FlutenNetBDD
-- Example usage in FluentNetBDD.Tests\Examples
+FluentNetBDD uses **subjunctions** and **actors** to compose domain-specific DSLs.
 
-## Example Test Layout (Copilot Should Follow)
+| Concept | Description |
+|----------|--------------|
+| `Given`, `When`, `Then` | Subjunctions that form the top-level DSL entrypoints. |
+| **Actor** | A domain participant exposing behavior through interfaces like `IGivenUser`, `IWhenUser`, `IThenUser`. |
+| **Driver** | The concrete implementation of an actor, registered in the DI container. |
+| **Dsl\<TGiven, TWhen, TThen\>** | A typed DSL entrypoint that builds subjunction proxies via `SubjunctionBuilder`. |
+| **Source Generator** | Emits strongly typed DSLs automatically for features (e.g. `BankCustomerDsl`). |
+| **Interceptor** | Handles property/method calls across composed actor interfaces. |
 
-```
-public class BankingFeature
+---
+
+## 🧩 Example Pattern
+
+When Copilot generates examples, it should **follow this structure**:
+
+```csharp
+[GenerateDsl(
+    "BankCustomer",
+    givenTypes: [typeof(IGivenBank), typeof(IBankCustomerGivenUser)],
+    whenTypes: [typeof(IBankCustomerWhenUser)],
+    thenTypes: [typeof(IThenBankAccount)]
+)]
+public class Bank_Customer_Transactions
 {
-    private Dsl<GivenForBank, WhenForBank, ThenForBank> Dsl;
-
-    [SetUp]
-    public void Setup()
-    {
-        var services = new ServiceCollection();
-        Dsl.Register(services);
-        provider = services.BuildServiceProvider();
-    }
-
     [Test]
-    public void Adding_Money()
+    public async Task Adding_Money_Increases_Balance()
     {
-        Given.User.HasAccount();
-        When.User.Deposits(100);
-        Then.User.HasBalance(100);
+        await Given.User.WithName("Alice").HasAccount();
+        await When.User.Transfers(50).To.User("Bob");
+        await Then.Account.HasBalance(50);
     }
+
+    protected IBankCustomerGiven Given;
+    protected IBankCustomerWhen When;
+    protected IBankCustomerThen Then;
 }
 ```
 
 ---
 
-## Copilot Should Generate
+## ⚙️ Guidelines for Copilot
 
-- ✅ `Dsl<TGiven, TWhen, TThen>` — the main class holding DI and proxies  
-- ✅ `DynamicPhaseProxyFactory` — helper for creating `Given`, `When`, `Then` proxies  
-- ✅ `StepInterceptor` — `IInterceptor` that resolves targets and forwards method calls (sync + async)  
-- ✅ Example step interfaces and corresponding implementations  
-- ✅ Minimal working NUnit example verifying dynamic delegation  
+When suggesting code inside this repository:
+
+### ✅ Prefer
+- Defining new **actor interfaces** with clear prefixes (`IGiven`, `IWhen`, `IThen`).
+- Creating **driver classes** that implement those interfaces.
+- Returning `Task.CompletedTask` or `Task.FromResult` for async chains.
+- Keeping DSL usage **fluent** and **ordered** (no lambdas or explicit delegates).
+- Using **DI-friendly** constructors for drivers.
+- Generating examples that **mirror the project’s style** and **naming conventions**.
+
+### 🚫 Avoid
+- SpecFlow-style `[Given]` / `[When]` / `[Then]` attributes.
+- Gherkin text, regex step bindings, or external parsers.
+- Reflection-based method dispatch.
+- Introducing dependencies outside `Microsoft.Extensions.DependencyInjection` and `Castle.DynamicProxy`.
+- Generic test frameworks scaffolding (`TestContext`, `ScenarioContext`, etc.) unless user code already imports it.
 
 ---
 
-## Non-Goals
+## 🧱 Example Structures
 
-- ❌ No Gherkin text parsing  
-- ❌ No automatic reflection-based step scanning  
-- ❌ No external frameworks beyond Castle and Microsoft.Extensions.DependencyInjection  
+**Actor Interface:**
+```csharp
+[Actor("User")]
+public interface IWhenUser
+{
+    Task Transfers(int amount);
+}
+```
+
+**Driver Implementation:**
+```csharp
+public class WhenUserDriver : IWhenUser
+{
+    private readonly BankApiClient _client;
+
+    public WhenUserDriver(BankApiClient client) => _client = client;
+
+    public async Task Transfers(int amount)
+        => await _client.PostAsync("/transfer", new { amount });
+}
+```
+
+**Test Usage:**
+```csharp
+await When.User.Transfers(100).To.User("Alice");
+```
 
 ---
 
-By following this file, Copilot should generate **C# code** that enables **DI-driven, proxy-based BDD DSL syntax**, matching the test style shown above.
+## 🧩 Context Awareness
+
+Copilot should recognize these folder roles:
+
+| Folder | Description |
+|---------|--------------|
+| `FluentNetBDD/` | Core runtime library — DSL, proxy builder, interceptors. |
+| `FluentNetBDD.Generation/` | Roslyn generation support types. |
+| `FluentNetBDD.Generators/` | Source generator implementations (e.g., `DslGenerator`). |
+| `FluentNetBDD.Tests/` | Example and integration tests demonstrating generated DSLs. |
 
 ---
 
-## Edit-scope rules for the assistant
+## 💡 Copilot Intent Summary
 
-Short, enforceable rules for when the assistant may apply edits automatically vs when it must propose a plan and wait for approval.
+- **Assist with DSL authoring**, not test logic.  
+- **Respect type safety**, avoid dynamic or reflection-based shortcuts.  
+- **Encourage composition and DI** for driver wiring.  
+- **Mirror the style** of existing code (naming, structure, async patterns).  
+- **Support progressive enhancement** — suggestions should feel like small, incremental improvements.
 
-- Default: Do NOT apply code edits unless the user explicitly approves a proposed plan.
-- Automatic edits allowed without prior approval when ALL of the following are true:
-  - The user asked for `"Make minimal edits"` or an equivalent short phrasing.
-  - The total changes are <= 15 lines across all files.
-  - No new classes, records, interfaces, or projects are added outside the currently discussed scope.
-- Approval required (assistant must present a short plan and wait for user to reply `"Apply changes"`) when ANY of the following is true:
-  - The edit set exceeds 15 lines across all files.
-  - New classes/records/interfaces/types are added outside the defined scope for the current task.
-  - Files outside the explicitly mentioned files are modified.
-- Exceeding the 15-line automatic limit is allowed only when the user explicitly instructs the assistant to do so. Example phrases that grant permission:
-  - `"You may exceed 16 lines for this change."`
-  - `"Allow edits >15 lines for this task."`
-  - `"Apply changes (allow larger edits)"`
-  In such cases the assistant may proceed without requiring an additional confirmation.
-- When presenting a plan the assistant should include:
-  - A one-line summary of intent.
-  - The list of files to change with exact modification summaries (e.g., `add method X to file Y`, `change 3 lines in Z`).
-  - An estimated line-count of the edits.
-- When edits are applied the assistant should:
-  - Run a build and report the result (ask for permission if the user didn't initiate the change in the same session).
-  - If tests are run, clearly report failures only; keep output terse.
+---
 
-### How users should phrase requests to control behavior
+> The goal of these instructions is for Copilot to help developers **extend** FluentNetBDD, not to “recreate” a BDD framework.  
+> Generated suggestions should feel like part of the library — fluent, typed, and composable.
 
-- `Propose changes` — assistant must only return a short plan/diff summary and wait.
-- `Apply changes` — assistant may edit files, but must follow the 15-line rule unless the user also specifies `Allow edits >15 lines`.
-- `Make minimal edits` — assistant may auto-apply edits up to 15 lines.
-- `You may exceed 16 lines` — assistant may perform larger edits without extra confirmation.
-
-If you want stricter limits, change the `15` number to your preferred threshold.
