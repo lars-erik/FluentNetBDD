@@ -1,4 +1,5 @@
 ﻿using FluentNetBDD.Dsl;
+using FluentNetBDD.Generation;
 
 namespace FluentNetBDD.Tests.Dsl.UserFeatures;
 
@@ -8,6 +9,7 @@ public class UserGreetingFeature
     public const string UserGreeting = nameof(UserGreeting);
 }
 
+[Actor("User")]
 public interface IUserWithName
 {
     string Name { get; }
@@ -16,11 +18,13 @@ public interface IUserWithName
     void WithName(string name);
 }
 
+[Actor("User")]
 public interface IUserGreetingAction
 {
     void IsGreeted();
 }
 
+[Actor("User")]
 public interface IUserGreetingVerification
 {
     void Hears(string greeting);

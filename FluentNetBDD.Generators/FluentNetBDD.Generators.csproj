@@ -2,9 +2,8 @@
 
   <PropertyGroup>
     <TargetFramework>netstandard2.0</TargetFramework>
-  </PropertyGroup>
+    <LangVersion>latest</LangVersion>
 
-  <PropertyGroup>
     <EnforceExtendedAnalyzerRules>True</EnforceExtendedAnalyzerRules>
   </PropertyGroup>
 

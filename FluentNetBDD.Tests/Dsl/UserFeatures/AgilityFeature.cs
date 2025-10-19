@@ -1,9 +1,10 @@
-﻿using System;
+﻿using FluentNetBDD.Dsl;
+using FluentNetBDD.Generation;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
-using FluentNetBDD.Dsl;
 
 namespace FluentNetBDD.Tests.Dsl.UserFeatures;
 
@@ -13,18 +14,21 @@ public class AgilityFeature
     public const string UserJumpedMeters = nameof(UserJumpedMeters);
 }
 
+[Actor("User")]
 public interface IUserWithAgility
 {
     int Agility { get; }
     void WithAgility(int agility);
 }
 
+[Actor("User")]
 public interface IUserAgilityActions
 {
     void Jumps();
     void Runs(int meters);
 }
 
+[Actor("User")]
 public interface IUserAgilityVerification
 {
     void Jumped(int meters);

@@ -5,26 +5,23 @@ using FluentNetBDD.Tests.Dsl.UserFeatures;
 using Microsoft.Extensions.DependencyInjection;
 
 [assembly:GenerateMarker("HelloWorlder")]
-[assembly:GenerateMarker("SillyWorlder", "Hello, silly")]
+[assembly:GenerateMarker("SillyWorlder", "Hello, silly dude")]
+
+[assembly:ConsumesDsl(
+    "AgileNamedUserDsl",
+    [typeof(IUserWithName), typeof(IUserWithAgility)],
+    [typeof(IUserGreetingAction), typeof(IUserAgilityActions)],
+    [typeof(IUserGreetingVerification), typeof(IUserAgilityVerification)]
+)]
 
 namespace FluentNetBDD.Tests.Dsl;
 
 public class Building_Composed_Subjunctions
 {
-    [Test]
-    public void Generated_Code_Can_Run()
-    {
-        var generated = new HelloWorlder();
-        Assert.That(generated.ToString(), Is.EqualTo("Hello world!"));
-        var generated2 = new SillyWorlder();
-        Assert.That(generated2.ToString(), Is.EqualTo("Hello, silly!"));
-    }
-
     private IServiceProvider mainProvider;
     private IServiceProvider provider;
-    private object untypedDsl;
 
-    private static readonly Type DslType = typeof(Dsl<,,>);
+    private AgileNamedUserDsl dsl;
 
     [OneTimeSetUp]
     public void SetUpServices()
@@ -49,7 +46,7 @@ public class Building_Composed_Subjunctions
     {
         provider = mainProvider.CreateScope().ServiceProvider;
 
-        //untypedDsl = ;
+        dsl = new AgileNamedUserDsl(provider);
     }
 
     [TearDown]
@@ -67,47 +64,20 @@ public class Building_Composed_Subjunctions
     [Test]
     public void Composes_By_Joining_Interfaces_Per_Conjunction()
     {
-        var dsl = new DslBuilder()
-            .AddGiven<IUserWithName>()
-            .AddGiven<IUserWithAgility>()
-            .AddWhen<IUserGreetingAction>()
-            .AddWhen<IUserAgilityActions>()
-            .AddThen<IUserGreetingVerification>()
-            .AddThen<IUserAgilityVerification>()
-            .Build(provider);
-    }
-}
+        dsl.Given.User.WithName("Neo");
+        dsl.Given.User.WithAgility(10);
 
-public class DslBuilder
-{
-    private readonly List<Type> given = new();
-    private readonly List<Type> when = new();
-    private readonly List<Type> then = new();
+        dsl.When.User.Jumps();
 
-    public DslBuilder AddGiven<T>()
-    {
-        given.Add(typeof(T));
-        return this;
+        dsl.Then.User.Jumped(5);
     }
 
-    public DslBuilder AddWhen<T>()
+    [Test]
+    public void Generated_Code_Can_Run()
     {
-        when.Add(typeof(T));
-        return this;
-    }
-
-    public DslBuilder AddThen<T>()
-    {
-        then.Add(typeof(T));
-        return this;
-    }
-
-    public object Build(IServiceProvider provider)
-    {
-        var createMethod = typeof(SubjunctionBuilder).GetMethod(nameof(SubjunctionBuilder.Create))!;
-        var givenType = createMethod.MakeGenericMethod(given.ToArray());
-        var whenType = createMethod.MakeGenericMethod(when.ToArray());
-        var thenType = createMethod.MakeGenericMethod(then.ToArray());
-        throw new NotImplementedException();
+        var generated = new HelloWorlder();
+        Assert.That(generated.ToString(), Is.EqualTo("Hello world!"));
+        var generated2 = new SillyWorlder();
+        Assert.That(generated2.ToString(), Is.EqualTo("Hello, silly!"));
     }
 }
