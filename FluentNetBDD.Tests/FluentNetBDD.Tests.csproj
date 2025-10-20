@@ -39,4 +39,9 @@
     <Using Include="NUnit.Framework" />
   </ItemGroup>
 
+  <ItemGroup>
+    <Folder Include="Examples\BankCustomer\Dsl\" />
+    <Folder Include="Examples\BankCustomer\Domain\" />
+  </ItemGroup>
+
 </Project>
