@@ -1,6 +1,7 @@
 ﻿using FluentNetBDD.Dsl;
 using FluentNetBDD.Generation;
 using FluentNetBDD.Tests.Dsl.UserFeatures;
+using System.Security.Principal;
 
 namespace FluentNetBDD.Tests.Dsl.BankCustomerFeatures;
 
@@ -56,24 +57,52 @@ public class BankUserGivenDriver : IBankUserGivenDriver, IUserWithName
 
 public class BankUserWhenDriver : IBankUserWhenDriver
 {
-    public Task Deposits(decimal amount, string toAccount)
+    private DslState state;
+    public BankUserWhenDriver(DslState state)
     {
-        return Task.CompletedTask;
+        this.state = state;
     }
-    public Task Withdraws(decimal amount, string fromAccount)
+
+    public async Task Deposits(decimal amount, string toAccount)
     {
-        return Task.CompletedTask;
+        await Task.Delay(10);
+        var existing = (decimal?)state.Get(toAccount);
+        var newAmount = (existing ?? 0) + amount;
+        state.Set(toAccount, newAmount);
+    }
+
+    public async Task Withdraws(decimal amount, string fromAccount)
+    {
+        await Task.Delay(10);
+        var existing = (decimal?)state.Get(fromAccount);
+        var newAmount = existing ?? 0;
+        if (existing.HasValue && existing >= amount)
+        {
+            newAmount = existing.Value - amount;
+        }
+        state.Set(fromAccount, newAmount);
     }
 }
 
 public class BankDriver : IBankDriver
 {
+    private DslState state;
+    private string contextAccount;
+
+    public BankDriver(DslState state)
+    {
+        this.state = state;
+    }
+
     public Task HasAccount(string accountNumber)
     {
+        Assert.That(state.Get(accountNumber), Is.Not.Null);
+        contextAccount = accountNumber;
         return Task.CompletedTask;
     }
     public Task WithBalance(decimal amount)
     {
+        Assert.That(state.Get(contextAccount), Is.EqualTo(amount));
         return Task.CompletedTask;
     }
 }

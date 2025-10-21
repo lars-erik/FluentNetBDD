@@ -74,6 +74,8 @@ public class Generating_Dsls
             {
                 private readonly IAgileNamedUserGivenUserDriver driver;
                 
+                public AgileNamedUserGivenUserBuilder And => this;
+                
                 public AgileNamedUserGivenUserBuilder(IAgileNamedUserGivenUserDriver driver)
                 {
                     this.driver = driver;
@@ -126,6 +128,8 @@ public class Generating_Dsls
             public class AgileNamedUserWhenUserBuilder
             {
                 private readonly IAgileNamedUserWhenUserDriver driver;
+                
+                public AgileNamedUserWhenUserBuilder And => this;
                 
                 public AgileNamedUserWhenUserBuilder(IAgileNamedUserWhenUserDriver driver)
                 {
@@ -185,6 +189,8 @@ public class Generating_Dsls
             public class AgileNamedUserThenUserBuilder
             {
                 private readonly IAgileNamedUserThenUserDriver driver;
+                
+                public AgileNamedUserThenUserBuilder And => this;
                 
                 public AgileNamedUserThenUserBuilder(IAgileNamedUserThenUserDriver driver)
                 {

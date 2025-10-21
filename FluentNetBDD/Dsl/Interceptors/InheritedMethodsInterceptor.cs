@@ -52,7 +52,6 @@ internal class InheritedMethodsInterceptor : IInterceptor
                 throw;
             }
 
-
             // Ensure we always return proxy for chaining
             if (invocation.ReturnValue == instance)
             {

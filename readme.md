@@ -13,9 +13,33 @@ FluentNetBDD was built to make feature-focused, fluent test DSLs both **easy to 
 
 - ✅ **Fluent DSL syntax** – natural, Gherkin-style test statements  
   ```csharp
-  Given.User.HasAccount();
-  When.User.Deposits(100);
-  Then.Account.HasBalance(100);
+    await Given.User
+        .WithName("Neo")
+        .WithAccount("123.123.123");
+
+    await When.User
+        .Deposits(
+            amount: 1500,
+            toAccount: "123.123.123"
+        )
+        .And
+        .Withdraws(
+            amount: 500,
+            fromAccount: "123.123.123"
+        );
+
+    await Then.Bank
+        .HasAccount("123.123.123")
+        .WithBalance(1000);
+  ```
+- ✅ **Beautiful output**
+  ```
+  ✅ Given User WithName (Neo)
+  ✅ Given User WithAccount (123.123.123)
+  ✅ When User Deposits (1500, 123.123.123)
+  ✅ When User Withdraws (500, 123.123.123)
+  ✅ Then Bank HasAccount (123.123.123)
+  ✅ Then Bank WithBalance (1000)
   ```
 - ✅ **Static typing & IntelliSense** – every subjunction (`Given`, `When`, `Then`) exposes only the actions relevant to that feature.
 - ✅ **Composable actors** – features can mix multiple actor capabilities without resolving to reflection or casting.
@@ -164,22 +188,10 @@ public class Bank_Customer_Transactions
   dsl.Given.User.Named("Neo");
   dsl.Then.User.Named("Neo").JumpedLongerThan("Trinity");
   ```
-- Library classes to aid in builder-pattern setup before execution of several steps:
-  ```csharp
-  Given.User
-      .WithAccount(balance: 100)
-      .And
-      .IsLoggedIn();
-
-  await When.User
-      .Transfers(50)
-      .To("Alice");
-
-  // Then...
-  ```
+- Way more method and parameter types handled by the builders
+- Examples with proper layering - domain, persistence, network, UI...
 - Enhanced **exception handling and interception** for nested or async operations.  
 - DSL documentation and automatic report generation.
-- Advanced Roslyn features for **cross-feature composition**.
 
 ---
 

@@ -269,6 +269,8 @@ namespace FluentNetBDD.Generators
                                  {
                                      private readonly I{{mainName}}Driver driver;
                                      
+                                     public {{mainName}}Builder And => this;
+                                     
                                      public {{mainName}}Builder(I{{mainName}}Driver driver)
                                      {
                                          this.driver = driver;
