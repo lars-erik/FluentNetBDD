@@ -32,7 +32,7 @@
   <ItemGroup>
     <ProjectReference Include="..\FluentNetBDD.Generation\FluentNetBDD.Generation.csproj" />
     <ProjectReference Include="..\FluentNetBDD\FluentNetBDD.csproj" />
-    <ProjectReference Include="..\FluentNetBDD.Generators\FluentNetBDD.Generators.csproj" OutputItemType="Analyzer" ReferenceOutputAssembly="false" />
+    <ProjectReference Include="..\FluentNetBDD.Generators\FluentNetBDD.Generators.csproj" OutputItemType="Analyzer" /> <!-- ReferenceOutputAssembly="false" -->
   </ItemGroup>
 
   <ItemGroup>
@@ -40,8 +40,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <Folder Include="Examples\BankCustomer\Dsl\" />
-    <Folder Include="Examples\BankCustomer\Domain\" />
+    <Folder Include="Examples\BankCustomer\Drivers\" />
   </ItemGroup>
 
 </Project>
