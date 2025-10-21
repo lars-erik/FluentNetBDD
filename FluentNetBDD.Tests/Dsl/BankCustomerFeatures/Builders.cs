@@ -60,19 +60,7 @@ public class BankUserGivenDriverBuilder : IBankUserGivenDriverBuilder
     private Task? task = null;
     private readonly List<Func<Task>> actions = new();
 
-    protected Task ToTask()
-    {
-        Func<Func<Task>, Task> selector = async action =>
-        {
-            await action();
-        };
-        if (task == null)
-        {
-            var tasks = actions.Select(selector);
-            task = Task.WhenAll(tasks);
-        }
-        return task;
-    }
+    protected Task ToTask() => task ??= Task.WhenAll(actions.Select(async action => await action()));
 
     public ConfiguredTaskAwaitable ConfigureAwait(bool continueOnCapturedContext) => ToTask().ConfigureAwait(continueOnCapturedContext);
     

@@ -1,6 +1,5 @@
 ﻿using FluentNetBDD.Dsl;
 using FluentNetBDD.Generation;
-using FluentNetBDD.Tests.Dsl.Generated;
 using FluentNetBDD.Tests.Dsl.UserFeatures;
 
 namespace FluentNetBDD.Tests.Dsl.BankCustomerFeatures;
@@ -30,7 +29,7 @@ public interface IBankDriver
     Task WithBalance(decimal amount);
 }
 
-public class BankUserGivenDriver : IBankUserGivenDriver, IUserWithName, IBankCustomerGivenUserDriver
+public class BankUserGivenDriver : IBankUserGivenDriver, IUserWithName
 {
     private readonly DslState state;
     public string Name { get; private set; } = "";

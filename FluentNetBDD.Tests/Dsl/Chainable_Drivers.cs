@@ -14,19 +14,12 @@ namespace FluentNetBDD.Tests.Dsl;
     thenTypes: [typeof(IBankDriver)]
 )]
 
-[GenerateDsl(
-    "BankCustomerBuilder",
-    givenTypes: [typeof(IBankUserGivenDriverBuilder)],
-    whenTypes: [typeof(IBankUserWhenDriverBuilder)],
-    thenTypes: [typeof(IBankDriverBuilder)]
-)]
-
 public class Chainable_Drivers
 {
-    private BankCustomerBuilderDsl dsl;
-    protected IBankCustomerBuilderGivenDriver Given;
-    protected IBankCustomerBuilderWhenDriver When;
-    protected IBankCustomerBuilderThenDriver Then;
+    private BankCustomerDsl dsl;
+    protected BankCustomerGivenBuilder Given;
+    protected BankCustomerWhenBuilder When;
+    protected BankCustomerThenBuilder Then;
     private IServiceProvider scopedProvider;
     private IServiceScope scope;
     private DslState state;
@@ -39,14 +32,9 @@ public class Chainable_Drivers
         services.AddScoped<BankUserGivenDriver>();
         services.AddScoped<IUserWithName>(p => p.GetRequiredService<BankUserGivenDriver>());
         services.AddScoped<IBankUserGivenDriver>(p => p.GetRequiredService<BankUserGivenDriver>());
-        services.AddScoped<IBankCustomerGivenUserDriver>(p => p.GetRequiredService<BankUserGivenDriver>());
         
         services.AddScoped<IBankUserWhenDriver, BankUserWhenDriver>();
         services.AddScoped<IBankDriver, BankDriver>();
-        
-        services.AddScoped<IBankUserGivenDriverBuilder, BankUserGivenDriverBuilder>();
-        services.AddScoped<IBankUserWhenDriverBuilder, BankUserWhenDriverBuilder>();
-        services.AddScoped<IBankDriverBuilder, BankDriverBuilder>();
         
         services.AddScoped<DslState>();
         
@@ -56,7 +44,7 @@ public class Chainable_Drivers
         scope = provider.CreateScope();
         scopedProvider = scope.ServiceProvider;
 
-        dsl = new BankCustomerBuilderDsl(scopedProvider);
+        dsl = new (scopedProvider);
         (Given, When, Then) = dsl;
 
         state = scopedProvider.GetRequiredService<DslState>();
@@ -76,22 +64,22 @@ public class Chainable_Drivers
             .WithAccount("123.123.123");
 
         // Let's start easy, then...
-        //await When.User
-        //    .Deposits(
-        //        amount: 1500, 
-        //        toAccount: "123.123.123"
-        //    )
-        //    .And
-        //    .Withdraws(
-        //        amount: 500,
-        //        fromAccount: "123.123.123"
-        //    )
+        await When.User
+            .Deposits(
+                amount: 1500,
+                toAccount: "123.123.123"
+            )
+            // .And
+            .Withdraws(
+                amount: 500,
+                fromAccount: "123.123.123"
+            )
         ;
 
-        //await Then.Bank
-        //    .HasAccount("123.123.123")
-        //    .OwnedBy("Neo")
-        //    .WithBalance(1000);
+        await Then.Bank
+            .HasAccount("123.123.123")
+            //.OwnedBy("Neo")
+            .WithBalance(1000);
 
         Assert.That(
             String.Join(Environment.NewLine, state.All.Select(p => $"{p.Key}: {p.Value}")),

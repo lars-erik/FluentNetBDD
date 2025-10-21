@@ -106,7 +106,7 @@ public class Using_Generated_Dsls
     {
         provider = mainProvider.CreateScope().ServiceProvider;
 
-        (Given, When, Then) = new AgileNamedUserDsl(provider);
+        (Given, When, Then) = new Dsl<IAgileNamedUserGivenDriver, IAgileNamedUserWhenDriver, IAgileNamedUserThenDriver>(provider);
     }
 
     [TearDown]
