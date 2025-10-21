@@ -13,12 +13,14 @@ namespace FluentNetBDD.Generators
     [Generator]
     public class DslGenerator : IIncrementalGenerator
     {
+        private readonly bool enableBuilder;
+
         private record DslSet
         {
             public string FeatureName { get; }
             public string Namespace { get; }
             public Dictionary<int, TypeInfo[]> Types { get; }
-
+            
             public DslSet(string featureName, string ns, Dictionary<int, TypeInfo[]> types)
             {
                 FeatureName = featureName?.Trim('"') ?? throw new ArgumentNullException(nameof(featureName));
@@ -34,11 +36,21 @@ namespace FluentNetBDD.Generators
             }
         }
 
+        public DslGenerator()
+        {
+            
+        }
+
+        public DslGenerator(bool enableBuilder)
+        {
+            this.enableBuilder = enableBuilder;
+        }
+
         public void Initialize(IncrementalGeneratorInitializationContext context)
         {
-//#if DEBUG
-//            if (!Debugger.IsAttached) Debugger.Launch();
-//#endif
+            //#if DEBUG
+            //            if (!Debugger.IsAttached) Debugger.Launch();
+            //#endif
 
             var classNames = context.SyntaxProvider
                 .CreateSyntaxProvider(
@@ -77,7 +89,7 @@ namespace FluentNetBDD.Generators
             }
 
             // TODO: Can we get those by name?
-            var argumentList = 
+            var argumentList =
                 attr.ArgumentList != null &&
                 attr.ArgumentList.Arguments.Any() &&
                 symbol != null &&
@@ -89,7 +101,7 @@ namespace FluentNetBDD.Generators
 
             var typeSet = argumentList
                 .Skip(1)
-                .Select((x, i) => new {x, i})
+                .Select((x, i) => new { x, i })
                 .ToDictionary(
                     (a) => a.i,
                     (a) =>
@@ -125,7 +137,9 @@ namespace FluentNetBDD.Generators
 
         private string GenerateInnerDsl(string featureName, string dslClassName, DslSet dslSet)
         {
-            var givenTypes = AsTypeInfos(dslSet.Types[0]); 
+            var doubleNewLine = Environment.NewLine + Environment.NewLine;
+
+            var givenTypes = AsTypeInfos(dslSet.Types[0]);
             var whenTypes = AsTypeInfos(dslSet.Types[1]);
             var thenTypes = AsTypeInfos(dslSet.Types[2]);
 
@@ -133,11 +147,54 @@ namespace FluentNetBDD.Generators
                 .Select(x => x.Type!.ContainingNamespace.ToString())
                 .Distinct();
 
-            var givenDeclarations = CreateSubjunctionDeclarations(featureName, "Given", givenTypes);
-            var whenDeclarations = CreateSubjunctionDeclarations(featureName, "When", whenTypes);
-            var thenDeclarations = CreateSubjunctionDeclarations(featureName, "Then", thenTypes);
+            var givenActors = FindSubjunctionActors(givenTypes);
+            var whenActors = FindSubjunctionActors(whenTypes);
+            var thenActors = FindSubjunctionActors(thenTypes);
 
-            var source = 
+            var givenDrivers = CreateSubjunctionDrivers(featureName, "Given", givenActors);
+            var whenDrivers = CreateSubjunctionDrivers(featureName, "When", whenActors);
+            var thenDrivers = CreateSubjunctionDrivers(featureName, "Then", thenActors);
+
+            var drivers = String.Join(doubleNewLine, [givenDrivers, whenDrivers, thenDrivers]);
+
+            var givenBuilders = CreateSubjunctionBuilders(featureName, "Given", givenActors);
+            var whenBuilders = CreateSubjunctionBuilders(featureName, "When", whenActors);
+            var thenBuilders = CreateSubjunctionBuilders(featureName, "Then", thenActors);
+
+            var builders = 
+                enableBuilder
+                    ? String.Join(
+                          doubleNewLine, 
+                          [givenBuilders, whenBuilders, thenBuilders]
+                      )
+                    : "";
+
+            var builderDslClass =
+                $$"""
+                  public partial class {{dslClassName}} : Dsl<{{featureName}}GivenBuilder, {{featureName}}WhenBuilder, {{featureName}}ThenBuilder>
+                  {
+                      public {{dslClassName}}(IServiceProvider provider)
+                      {
+                          Given = new {{featureName}}GivenBuilder(provider);
+                          When = new {{featureName}}WhenBuilder(provider);
+                          Then = new {{featureName}}ThenBuilder(provider);
+                      }
+                  }
+                  """;
+
+            var driverDslClass =
+                $$"""
+                  public partial class {{dslClassName}} : Dsl<I{{featureName}}GivenDriver, I{{featureName}}WhenDriver, I{{featureName}}ThenDriver>
+                  {
+                      public {{dslClassName}}(IServiceProvider provider) : base(provider)
+                      {
+                      }
+                  }
+                  """;
+
+            var dslClass = enableBuilder ? builderDslClass : driverDslClass;
+
+            var source =
                 $$"""
                   using System;
                   using FluentNetBDD.Dsl;
@@ -146,19 +203,11 @@ namespace FluentNetBDD.Generators
                   {{(dslSet.Namespace != "" ? $"namespace {dslSet.Namespace}.Generated;" : "")}}
 
                   // <auto-generated/>
-                  {{givenDeclarations}}
+                  {{drivers}}
 
-                  {{whenDeclarations}}
-
-                  {{thenDeclarations}}
-
-                  public partial class {{dslClassName}} : Dsl<I{{featureName}}GivenDriver, I{{featureName}}WhenDriver, I{{featureName}}ThenDriver>
-                  {
-                      public {{dslClassName}}(IServiceProvider provider) : base(provider)
-                      {
-                      
-                      }
-                  }
+                  {{builders}}
+                  
+                  {{dslClass}}
                   """;
             return source;
         }
@@ -169,21 +218,12 @@ namespace FluentNetBDD.Generators
             return types;
         }
 
-        private string CreateSubjunctionDeclarations(string featureName, string subjunctionName, TypeInfo[] subjunctionTypes)
+        private string CreateSubjunctionDrivers(string featureName, string subjunctionName, Dictionary<string, TypeInfo[]> subjunctionActors)
         {
-            // TODO: Validate a bit more non-nullability
-            var subjunctionActors = subjunctionTypes
-                .Where(x => x.Type?.GetAttributes().Any(a => a.AttributeClass?.Name == nameof(ActorAttribute)) == true)
-                .GroupBy(x => x.Type!.GetAttributes().First(a => a.AttributeClass!.Name == nameof(ActorAttribute)).ConstructorArguments.First().Value!.ToString())
-                .ToDictionary(
-                    x => x.Key,
-                    x => x.ToArray()
-                );
-
             var subjunctionMembers = subjunctionActors
                 .ToDictionary(
                     actor => actor.Key,
-                    actor => 
+                    actor =>
                         $$"""
                           public interface I{{featureName}}{{subjunctionName}}{{actor.Key}}Driver : {{String.Join(", ", actor.Value.Select(x => x.Type!.Name))}} {}
                           """
@@ -197,12 +237,96 @@ namespace FluentNetBDD.Generators
                   }
                   """;
 
-            var subjunctionDeclarations = 
+            var subjunctionDeclarations =
                 $"""
                  {String.Join(Environment.NewLine, subjunctionMembers.Values)}
                  {subjunctionInterface}
                  """;
             return subjunctionDeclarations;
+        }
+
+        private string CreateSubjunctionBuilders(string featureName, string subjunctionName, Dictionary<string, TypeInfo[]> subjunctionActors)
+        {
+            var subjunctionMemberBuilders = subjunctionActors
+                .ToDictionary(
+                    actor => actor.Key,
+                    actor =>
+                    {
+                        var mainName = String.Concat([featureName, subjunctionName, actor.Key]);
+                        return $$"""
+                                 public class {{mainName}}Builder
+                                 {
+                                     private readonly I{{mainName}}Driver driver;
+                                     
+                                     public {{mainName}}Builder(I{{mainName}}Driver driver)
+                                     {
+                                         this.driver = driver;
+                                     }
+                                     
+                                 {{String.Join(Environment.NewLine,
+                                     actor.Value.Select(typeInfo =>
+                                     {
+                                         var memberImplementations =
+                                             String.Join(Environment.NewLine + "    ",
+                                             typeInfo.Type?
+                                                .GetMembers()
+                                                .OfType<IMethodSymbol>()
+                                                .Where(member => member.MethodKind == MethodKind.Ordinary)
+                                                .Select(member =>
+                                                {
+                                                    var parameterList = String.Join(", ", member.Parameters.Select(p => $"{p.Type.Name} {p.Name}")); 
+                                                    var argumentList = String.Join(", ", member.Parameters.Select(p => p.Name));
+                                                    var code =
+                                                        $$"""
+                                                            public {{mainName}}Builder {{member.Name}}({{parameterList}})
+                                                            {
+                                                                {{(
+                                                                    member.IsAsync
+                                                                    ? $"actions.Add(async () => await driver.{member.Name}({argumentList});"
+                                                                    : $"actions.Add(async () => await Task.Run(() => driver.{member.Name}({argumentList});"
+                                                                )}}
+                                                                return this;
+                                                            }
+                                                        
+                                                        """;
+                                                    return code;
+                                                })
+                                             ?? []
+                                             ); ;
+                                         return memberImplementations;
+                                     })
+                                 )}}
+                                 }
+                                 
+                                 """;
+                    });
+
+            var subjunctionBuilder =
+                $$"""
+                  public class {{featureName}}{{subjunctionName}}Builder
+                  {
+                  {{String.Join(Environment.NewLine, subjunctionActors.Keys.Select(actor => $"    {featureName}{subjunctionName}{actor}Builder {actor} {{ get; }}"))}}
+                  }
+                  """;
+
+            var subjunctionDeclarations =
+                $"""
+                 {String.Join(Environment.NewLine, subjunctionMemberBuilders.Values)}
+                 {subjunctionBuilder}
+                 """;
+            return subjunctionDeclarations;
+        }
+
+        private static Dictionary<string, TypeInfo[]> FindSubjunctionActors(TypeInfo[] subjunctionTypes)
+        {
+            // TODO: Validate a bit more non-nullability
+            return subjunctionTypes
+                .Where(x => x.Type?.GetAttributes().Any(a => a.AttributeClass?.Name == nameof(ActorAttribute)) == true)
+                .GroupBy(x => x.Type!.GetAttributes().First(a => a.AttributeClass!.Name == nameof(ActorAttribute)).ConstructorArguments.First().Value!.ToString())
+                .ToDictionary(
+                    x => x.Key,
+                    x => x.ToArray()
+                );
         }
     }
 }

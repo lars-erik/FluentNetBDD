@@ -1,5 +1,6 @@
 ﻿using System.Diagnostics;
 using Castle.DynamicProxy;
+using BindingFlags = System.Reflection.BindingFlags;
 
 namespace FluentNetBDD.Dsl.Interceptors;
 
@@ -49,6 +50,13 @@ internal class InheritedMethodsInterceptor : IInterceptor
             {
                 Trace.WriteLine("❌ " + logLine);
                 throw;
+            }
+
+
+            // Ensure we always return proxy for chaining
+            if (invocation.ReturnValue == instance)
+            {
+                invocation.ReturnValue = invocation.Proxy;
             }
         }
         else

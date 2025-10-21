@@ -1,6 +1,6 @@
-﻿using System.Diagnostics;
-using FluentNetBDD.Dsl;
+﻿using FluentNetBDD.Dsl;
 using FluentNetBDD.Generation;
+using FluentNetBDD.Tests.Dsl.Generated;
 using FluentNetBDD.Tests.Dsl.UserFeatures;
 using Microsoft.Extensions.DependencyInjection;
 
@@ -15,9 +15,9 @@ namespace FluentNetBDD.Tests.Dsl;
 
 public class Using_Generated_Dsls
 {
-    protected IAgileNamedUserGiven Given;
-    protected IAgileNamedUserWhen When;
-    protected IAgileNamedUserThen Then;
+    protected IAgileNamedUserGivenDriver Given;
+    protected IAgileNamedUserWhenDriver When;
+    protected IAgileNamedUserThenDriver Then;
 
     [Test]
     public void Has_Single_Instance_Scoped_Drivers()
