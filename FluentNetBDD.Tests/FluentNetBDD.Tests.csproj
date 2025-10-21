@@ -14,10 +14,6 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <Compile Remove="Dsl\BankCustomerFeatures\Builders.cs" />
-  </ItemGroup>
-
-  <ItemGroup>
     <PackageReference Include="coverlet.collector" Version="6.0.4">
       <PrivateAssets>all</PrivateAssets>
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
@@ -45,10 +41,6 @@
 
   <ItemGroup>
     <Folder Include="Examples\BankCustomer\Drivers\" />
-  </ItemGroup>
-
-  <ItemGroup>
-    <None Include="Dsl\BankCustomerFeatures\Builders.cs" />
   </ItemGroup>
 
 </Project>

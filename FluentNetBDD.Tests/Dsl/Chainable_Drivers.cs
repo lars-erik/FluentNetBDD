@@ -38,8 +38,6 @@ public class Chainable_Drivers
         
         services.AddScoped<DslState>();
         
-        // TODO: We're gonna have to BankCustomerBuilderDsl.Register(services) for the builders, or maybe ...
-
         var provider = services.BuildServiceProvider();
         scope = provider.CreateScope();
         scopedProvider = scope.ServiceProvider;

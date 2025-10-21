@@ -96,7 +96,11 @@ public class Generating_Dsls
                 private Task? task = null;
                 private readonly List<Func<Task>> actions = new();
                 
-                protected Task ToTask() => task ??= Task.WhenAll(actions.Select(async action => await action()));
+                protected Task ToTask() => task ??= actions.Aggregate
+                (
+                    Task.CompletedTask,
+                    (prev, next) => prev.ContinueWith(_ => next()).Unwrap()
+                );
                 
                 public ConfiguredTaskAwaitable ConfigureAwait(bool continueOnCapturedContext) => ToTask().ConfigureAwait(continueOnCapturedContext);
                 
@@ -151,7 +155,11 @@ public class Generating_Dsls
                 private Task? task = null;
                 private readonly List<Func<Task>> actions = new();
                 
-                protected Task ToTask() => task ??= Task.WhenAll(actions.Select(async action => await action()));
+                protected Task ToTask() => task ??= actions.Aggregate
+                (
+                    Task.CompletedTask,
+                    (prev, next) => prev.ContinueWith(_ => next()).Unwrap()
+                );
                 
                 public ConfiguredTaskAwaitable ConfigureAwait(bool continueOnCapturedContext) => ToTask().ConfigureAwait(continueOnCapturedContext);
                 
@@ -200,7 +208,11 @@ public class Generating_Dsls
                 private Task? task = null;
                 private readonly List<Func<Task>> actions = new();
                 
-                protected Task ToTask() => task ??= Task.WhenAll(actions.Select(async action => await action()));
+                protected Task ToTask() => task ??= actions.Aggregate
+                (
+                    Task.CompletedTask,
+                    (prev, next) => prev.ContinueWith(_ => next()).Unwrap()
+                );
                 
                 public ConfiguredTaskAwaitable ConfigureAwait(bool continueOnCapturedContext) => ToTask().ConfigureAwait(continueOnCapturedContext);
                 
