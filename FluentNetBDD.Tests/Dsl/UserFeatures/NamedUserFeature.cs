@@ -31,7 +31,7 @@ public interface IUserGreetingVerification
 }
 
 /// <summary>
-/// This is here for the manual example in <see cref="Building_Single_Feature_Subjunctions"/>.
+/// This is here for the manual example in <see cref="Building_Subjunction_Proxies_With_Drivers"/>.
 /// It should rather be generated via the <see cref="GenerateDslAttribute"/> attribute.
 /// </summary>
 public interface IGivenUserWithName
@@ -40,7 +40,7 @@ public interface IGivenUserWithName
 }
 
 /// <summary>
-/// This is here for the manual example in <see cref="Building_Single_Feature_Subjunctions"/>.
+/// This is here for the manual example in <see cref="Building_Subjunction_Proxies_With_Drivers"/>.
 /// It should rather be generated via the <see cref="GenerateDslAttribute"/> attribute.
 /// </summary>
 public interface IWhenUserGreeting
@@ -49,7 +49,7 @@ public interface IWhenUserGreeting
 }
 
 /// <summary>
-/// This is here for the manual example in <see cref="Building_Single_Feature_Subjunctions"/>.
+/// This is here for the manual example in <see cref="Building_Subjunction_Proxies_With_Drivers"/>.
 /// It should rather be generated via the <see cref="GenerateDslAttribute"/> attribute.
 /// </summary>
 public interface IThenUserGreeting

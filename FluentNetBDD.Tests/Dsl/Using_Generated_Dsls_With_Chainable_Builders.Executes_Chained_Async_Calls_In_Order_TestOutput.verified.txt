@@ -1,0 +1,6 @@
+﻿✅ Given User WithName (Neo)
+✅ Given User WithAccount (123.123.123)
+✅ When User Deposits (1500, 123.123.123)
+✅ When User Withdraws (500, 123.123.123)
+✅ Then Bank HasAccount (123.123.123)
+✅ Then Bank WithBalance (1000)

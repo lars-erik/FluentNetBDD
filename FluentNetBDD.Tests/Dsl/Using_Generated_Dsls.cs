@@ -1,5 +1,6 @@
 ﻿using FluentNetBDD.Dsl;
 using FluentNetBDD.Generation;
+using FluentNetBDD.NUnit;
 using FluentNetBDD.Tests.Dsl.Generated;
 using FluentNetBDD.Tests.Dsl.UserFeatures;
 using Microsoft.Extensions.DependencyInjection;
@@ -14,21 +15,24 @@ namespace FluentNetBDD.Tests.Dsl;
     thenTypes: [typeof(IUserGreetingVerification), typeof(IUserAgilityVerification)]
 )]
 
-public class Using_Generated_Dsls
+/*
+ * This class tests the "raw" DSL drivers.
+ * We presume everyone want to use the chainable builders, so there is no generated non-generic class.
+ * Hence the extra long list of generic parameters.
+ */
+public class Using_Generated_Dsls : DslTestBase<
+    Dsl<IAgileNamedUserGivenDriver, IAgileNamedUserWhenDriver, IAgileNamedUserThenDriver>,
+    IAgileNamedUserGivenDriver, IAgileNamedUserWhenDriver, IAgileNamedUserThenDriver>
 {
-    protected IAgileNamedUserGivenDriver Given;
-    protected IAgileNamedUserWhenDriver When;
-    protected IAgileNamedUserThenDriver Then;
-
     [Test]
     public void Has_Single_Instance_Scoped_Drivers()
     {
-        var stateA = provider.GetRequiredService<DslState>();
-        var stateB = provider.GetRequiredService<DslState>();
+        var stateA = Provider.GetRequiredService<DslState>();
+        var stateB = Provider.GetRequiredService<DslState>();
         Assert.That(stateA, Is.SameAs(stateB));
 
-        var userWithNameA = provider.GetRequiredService<IUserWithName>();
-        var userWithNameB = provider.GetRequiredService<IUserWithName>();
+        var userWithNameA = Provider.GetRequiredService<IUserWithName>();
+        var userWithNameB = Provider.GetRequiredService<IUserWithName>();
         Assert.That(userWithNameA, Is.SameAs(userWithNameB).And.InstanceOf<UserWithName>());
 
         userWithNameA.WithName("THE user");
@@ -38,8 +42,8 @@ public class Using_Generated_Dsls
     [Test]
     public void Resolves_Scoped_Implementations_From_Provider()
     {
-        var state = provider.GetRequiredService<DslState>();
-        var providedUserWithName = provider.GetRequiredService<IUserWithName>();
+        var state = Provider.GetRequiredService<DslState>();
+        var providedUserWithName = Provider.GetRequiredService<IUserWithName>();
         
         Given.User.WithName("Neo");
 
@@ -63,8 +67,7 @@ public class Using_Generated_Dsls
         When.User.Jumps();
         Then.User.Jumped(expectedJumpMetersWithRunUp);
 
-        var state = provider.GetRequiredService<DslState>();
-        Assert.That(state.Get(AgilityFeature.UserJumpedMeters), Is.EqualTo(expectedJumpMetersWithRunUp));
+        Assert.That(State.Get(AgilityFeature.UserJumpedMeters), Is.EqualTo(expectedJumpMetersWithRunUp));
     }
 
     [Test]
@@ -81,44 +84,14 @@ public class Using_Generated_Dsls
         );
     }
 
-    private IServiceProvider mainProvider;
-    private IServiceProvider provider;
-
-    [OneTimeSetUp]
-    public void SetUpServices()
+    protected override void AddDrivers(IServiceCollection services)
     {
-        var services = new ServiceCollection();
+        services.AddScopedDriver<UserWithName>();
+        services.AddScopedDriver<UserGreetingAction>();
+        services.AddScopedDriver<UserGreetingVerification>();
 
-        services.AddScoped<IUserWithName, UserWithName>();
-        services.AddScoped<IUserGreetingAction, UserGreetingAction>();
-        services.AddScoped<IUserGreetingVerification, UserGreetingVerification>();
-
-        services.AddScoped<IUserWithAgility, UserWithAgility>();
-        services.AddScoped<IUserAgilityActions, UserWithAgilityActions>();
-        services.AddScoped<IUserAgilityVerification, UserWithAgilityVerification>();
-
-        services.AddScoped<DslState>();
-
-        mainProvider = services.BuildServiceProvider();
-    }
-
-    [SetUp]
-    public void SetUpProvider()
-    {
-        provider = mainProvider.CreateScope().ServiceProvider;
-
-        (Given, When, Then) = new Dsl<IAgileNamedUserGivenDriver, IAgileNamedUserWhenDriver, IAgileNamedUserThenDriver>(provider);
-    }
-
-    [TearDown]
-    public void DisposeProvider()
-    {
-        (provider as IDisposable)?.Dispose();
-    }
-
-    [OneTimeTearDown]
-    public void DisposeMainProvider()
-    {
-        (mainProvider as IDisposable)?.Dispose();
+        services.AddScopedDriver<UserWithAgility>();
+        services.AddScopedDriver<UserWithAgilityActions>();
+        services.AddScopedDriver<UserWithAgilityVerification>();
     }
 }
