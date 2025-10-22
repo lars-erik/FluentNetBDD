@@ -1,5 +1,6 @@
 ﻿using FluentNetBDD.Dsl;
 using FluentNetBDD.Generation;
+using FluentNetBDD.Tests.Common;
 using FluentNetBDD.Tests.Dsl.BankCustomerFeatures;
 using FluentNetBDD.Tests.Dsl.Generated;
 using FluentNetBDD.Tests.Dsl.UserFeatures;
@@ -14,7 +15,13 @@ namespace FluentNetBDD.Tests.Dsl;
     thenTypes: [typeof(IBankDriver)]
 )]
 
-public class Chainable_Drivers
+public class Using_Generated_Dsls_With_Chainable_Builders 
+    : DslTestBase<
+        BankCustomerDsl, 
+        BankCustomerGivenBuilder, 
+        BankCustomerWhenBuilder, 
+        BankCustomerThenBuilder
+    >
 {
     [Test]
     public async Task Executes_Chained_Async_Calls_In_Order()
@@ -28,68 +35,25 @@ public class Chainable_Drivers
                 amount: 1500,
                 toAccount: "123.123.123"
             )
-            .And
-            .Withdraws(
+            .And.Withdraws(
                 amount: 500,
                 fromAccount: "123.123.123"
-            )
-        ;
+            );
 
         await Then.Bank
             .HasAccount("123.123.123")
-            //.OwnedBy("Neo")
             .WithBalance(1000);
 
-        Assert.That(
-            String.Join(Environment.NewLine, state.All.Select(p => $"{p.Key}: {p.Value}")),
-            Is.EqualTo
-            (
-            $"""
-            {NamedUserFeature.UserName}: Neo
-            {BankCustomerFeature.AccountNumber}: 123.123.123
-            123.123.123: 1000
-            """
-            )
-        );
+        await State.Verify();
     }
 
-    private BankCustomerDsl dsl;
-    protected BankCustomerGivenBuilder Given;
-    protected BankCustomerWhenBuilder When;
-    protected BankCustomerThenBuilder Then;
-    private IServiceProvider scopedProvider;
-    private IServiceScope scope;
-    private DslState state;
-
-    [SetUp]
-    public void SetUp()
+    protected override void AddDrivers(IServiceCollection services)
     {
-        var services = new ServiceCollection();
-
         services.AddScoped<BankUserGivenDriver>();
         services.AddScoped<IUserWithName>(p => p.GetRequiredService<BankUserGivenDriver>());
         services.AddScoped<IBankUserGivenDriver>(p => p.GetRequiredService<BankUserGivenDriver>());
 
         services.AddScoped<IBankUserWhenDriver, BankUserWhenDriver>();
         services.AddScoped<IBankDriver, BankDriver>();
-
-        services.AddScoped<DslState>();
-
-        var provider = services.BuildServiceProvider();
-        scope = provider.CreateScope();
-        scopedProvider = scope.ServiceProvider;
-
-        dsl = new(scopedProvider);
-        (Given, When, Then) = dsl;
-
-        state = scopedProvider.GetRequiredService<DslState>();
     }
-
-    [TearDown]
-    public void TearDown()
-    {
-        scope.Dispose();
-    }
-
-
 }

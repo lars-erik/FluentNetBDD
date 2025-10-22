@@ -3,6 +3,7 @@ using FluentNetBDD.Generation;
 using FluentNetBDD.Tests.Dsl.Generated;
 using FluentNetBDD.Tests.Dsl.UserFeatures;
 using Microsoft.Extensions.DependencyInjection;
+using Throws = NUnit.Framework.Throws;
 
 namespace FluentNetBDD.Tests.Dsl;
 

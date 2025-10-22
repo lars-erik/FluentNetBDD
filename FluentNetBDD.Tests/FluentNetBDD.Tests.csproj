@@ -27,10 +27,12 @@
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
     </PackageReference>
     <PackageReference Include="NUnit3TestAdapter" Version="5.2.0" />
+    <PackageReference Include="Verify.NUnit" Version="31.0.4" />
   </ItemGroup>
 
   <ItemGroup>
     <ProjectReference Include="..\FluentNetBDD.Generation\FluentNetBDD.Generation.csproj" />
+    <ProjectReference Include="..\FluentNetBDD.NUnit\FluentNetBDD.NUnit.csproj" />
     <ProjectReference Include="..\FluentNetBDD\FluentNetBDD.csproj" />
     <ProjectReference Include="..\FluentNetBDD.Generators\FluentNetBDD.Generators.csproj" OutputItemType="Analyzer" /> <!-- ReferenceOutputAssembly="false" -->
   </ItemGroup>
@@ -41,6 +43,10 @@
 
   <ItemGroup>
     <Folder Include="Examples\BankCustomer\Drivers\" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Compile Remove="**/Approvals/*.g.cs" />
   </ItemGroup>
 
 </Project>

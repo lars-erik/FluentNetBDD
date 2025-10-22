@@ -364,3 +364,4 @@ FodyWeavers.xsd
 
 # Project specific
 *.zip
+*.received.*

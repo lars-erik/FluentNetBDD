@@ -36,28 +36,10 @@ public class Dsl<TGiven, TWhen, TThen>
         Then = this.Then;
         When = this.When;
     }
-}
 
-public class DslState
-{
-    private readonly Dictionary<string, object?> stateBag = new();
-
-    public IReadOnlyDictionary<string, object?> All => stateBag.AsReadOnly();
-
-    public object? Get(string key)
+    public static TDsl Create<TDsl>(IServiceProvider provider)
+        where TDsl : Dsl<TGiven, TWhen, TThen>
     {
-        return stateBag.GetValueOrDefault(key);
-    }
-
-    public void Set(string key, object? value, bool overwrite = true)
-    {
-        if (!stateBag.ContainsKey(key))
-        {
-            stateBag.Add(key, value!);
-        }
-        else if (overwrite)
-        {
-            stateBag[key] = value!;
-        }
+        return (TDsl)Activator.CreateInstance(typeof(TDsl), provider)!;
     }
 }

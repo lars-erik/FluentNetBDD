@@ -17,6 +17,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "FluentNetBDD.Generators", "
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "FluentNetBDD.Generation", "FluentNetBDD.Generation\FluentNetBDD.Generation.csproj", "{CC22BA89-0AD2-4D8B-9D2F-8DE1905DC31E}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "FluentNetBDD.NUnit", "FluentNetBDD.NUnit\FluentNetBDD.NUnit.csproj", "{575AF238-41A2-4B7B-9B38-8E68E8DE9EB0}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -39,6 +41,10 @@ Global
 		{CC22BA89-0AD2-4D8B-9D2F-8DE1905DC31E}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{CC22BA89-0AD2-4D8B-9D2F-8DE1905DC31E}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{CC22BA89-0AD2-4D8B-9D2F-8DE1905DC31E}.Release|Any CPU.Build.0 = Release|Any CPU
+		{575AF238-41A2-4B7B-9B38-8E68E8DE9EB0}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{575AF238-41A2-4B7B-9B38-8E68E8DE9EB0}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{575AF238-41A2-4B7B-9B38-8E68E8DE9EB0}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{575AF238-41A2-4B7B-9B38-8E68E8DE9EB0}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

@@ -236,7 +236,7 @@ namespace FluentNetBDD.Generators
                     actor => actor.Key,
                     actor =>
                         $$"""
-                          public interface I{{featureName}}{{subjunctionName}}{{actor.Key}}Driver : {{String.Join(", ", actor.Value.Select(x => x.Type!.Name))}} {}
+                          public interface I{{featureName}}{{subjunctionName}}{{actor.Key}}Driver : {{String.Join(", ", actor.Value.Select(x => x.Type!.Name))}} { }
                           """
                 );
 
@@ -264,23 +264,17 @@ namespace FluentNetBDD.Generators
                     actor =>
                     {
                         var mainName = String.Concat([featureName, subjunctionName, actor.Key]);
+                        var builderName = String.Concat([mainName, "Builder"]);
                         return $$"""
-                                 public class {{mainName}}Builder
+                                 public class {{builderName}} : DriverSequenceBuilderBase<{{builderName}}, I{{mainName}}Driver>
                                  {
-                                     private readonly I{{mainName}}Driver driver;
-                                     
-                                     public {{mainName}}Builder And => this;
-                                     
-                                     public {{mainName}}Builder(I{{mainName}}Driver driver)
-                                     {
-                                         this.driver = driver;
-                                     }
-                                     
+                                     public {{builderName}}(I{{mainName}}Driver driver) : base(driver) { }
+                                 
                                  {{String.Join(Environment.NewLine,
                                      actor.Value.Select(typeInfo =>
                                      {
                                          var memberImplementations =
-                                             String.Join(Environment.NewLine + "    ",
+                                             String.Join(Environment.NewLine,
                                              typeInfo.Type?
                                                 .GetMembers()
                                                 .OfType<IMethodSymbol>()
@@ -291,60 +285,37 @@ namespace FluentNetBDD.Generators
                                                     var argumentList = String.Join(", ", member.Parameters.Select(p => p.Name));
                                                     var code =
                                                         $$"""
-                                                            public {{mainName}}Builder {{member.Name}}({{parameterList}})
-                                                            {
-                                                                {{(
-                                                                    member.IsAsync
-                                                                    ? $"actions.Add(async () => await driver.{member.Name}({argumentList})));"
-                                                                    : $"actions.Add(async () => await Task.Run(() => driver.{member.Name}({argumentList})));"
-                                                                )}}
-                                                                return this;
-                                                            }
-                                                        
+                                                            public {{builderName}} {{member.Name}}({{parameterList}}) => AddAction({{(
+                                                                member.IsAsync
+                                                                ? $"async () => await Driver.{member.Name}({argumentList})"
+                                                                : $"async () => await Task.Run(() => Driver.{member.Name}({argumentList}))"
+                                                            )}});
                                                         """;
                                                     return code;
                                                 })
                                              ?? []
-                                             ); ;
+                                             );
                                          return memberImplementations;
                                      })
                                  )}}
-                                 
-                                     // THIS REALLY HAS TO GO INTO A BASE CLASS
-                                     private Task? task = null;
-                                     private readonly List<Func<Task>> actions = new();
-                                     
-                                     protected Task ToTask() => task ??= actions.Aggregate
-                                     (
-                                         Task.CompletedTask,
-                                         (prev, next) => prev.ContinueWith(_ => next()).Unwrap()
-                                     );
-                                     
-                                     public ConfiguredTaskAwaitable ConfigureAwait(bool continueOnCapturedContext) => ToTask().ConfigureAwait(continueOnCapturedContext);
-                                     
-                                     public TaskAwaiter GetAwaiter() => ToTask().GetAwaiter();
-                                     
-                                     public static implicit operator Task({{mainName}}Builder builder) => builder.ToTask();
-                                 
                                  }
                                  
                                  """;
                     });
 
+            var mainName = String.Concat([featureName, subjunctionName]);
+            var builderName = String.Concat([mainName, "Builder"]);
             var subjunctionBuilder =
                 $$"""
-                  public class {{featureName}}{{subjunctionName}}Builder
+                  public class {{builderName}}
                   {
-                  {{String.Join(Environment.NewLine, subjunctionActors.Keys.Select(actor => $"    public {featureName}{subjunctionName}{actor}Builder {actor} {{ get; }}"))}}
-                  
-                      public {{featureName}}{{subjunctionName}}Builder
-                      (
-                          I{{featureName}}{{subjunctionName}}Driver driver
-                      )
+                  {{String.Join(Environment.NewLine, subjunctionActors.Keys.Select(actor => $"    public {mainName}{actor}Builder {actor} {{ get; }}"))}}
+
+                      public {{builderName}}(I{{mainName}}Driver driver)
                       {
                           {{String.Join(
-                              ", " + Environment.NewLine + "        ", 
-                              subjunctionActors.Keys.Select(actor => $"this.{actor} = new {featureName}{subjunctionName}{actor}Builder(driver.{actor});"))}}
+                              ", " + Environment.NewLine + "        ",
+                              subjunctionActors.Keys.Select(actor => $"this.{actor} = new {mainName}{actor}Builder(driver.{actor});"))}}
                       }
                   }
                   """;
